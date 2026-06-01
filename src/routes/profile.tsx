@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageCircle, Star, Heart, UserCircle2 } from "lucide-react";
+import { MessageCircle, Star, Heart, UserCircle2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -77,6 +77,22 @@ function ProfilePage() {
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
   };
 
+  const { data: anyAdmin } = useQuery({
+    queryKey: ["any-admin"],
+    queryFn: async () => {
+      const { count } = await supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin");
+      return (count ?? 0) > 0;
+    },
+  });
+
+  const claimAuthorship = async () => {
+    if (!user) return;
+    const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: "admin" });
+    if (error) { toast.error(error.message); return; }
+    toast.success("The quill is yours.");
+    location.reload();
+  };
+
   if (loading || !user || !profile) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Summoning your sigil…</div>;
 
   return (
@@ -129,6 +145,33 @@ function ProfilePage() {
           </p>
         )}
       </section>
+
+      {!isAdmin && (
+        <section className="rounded-lg border border-primary/40 bg-card/40 p-6 mt-6 text-center">
+          <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-3" />
+          <h2 className="font-display text-2xl mb-2">Claim Authorship</h2>
+          {anyAdmin ? (
+            <p className="text-sm text-muted-foreground italic">The quill has already been claimed by another.</p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground mb-4">
+                No author has stepped forward yet. Claim the quill to unlock the Scriptorium and publish chapters.
+              </p>
+              <Button onClick={claimAuthorship} className="bg-gold-gradient text-gold-foreground">
+                Take up the quill
+              </Button>
+            </>
+          )}
+        </section>
+      )}
+
+      {isAdmin && (
+        <section className="rounded-lg border border-primary/40 bg-card/40 p-6 mt-6 text-center">
+          <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-3" />
+          <p className="font-sans text-xs uppercase tracking-[0.3em] text-primary">You bear the quill</p>
+          <Link to="/admin" className="font-display text-xl text-glow underline mt-2 inline-block">Enter the Scriptorium</Link>
+        </section>
+      )}
     </div>
   );
 }
