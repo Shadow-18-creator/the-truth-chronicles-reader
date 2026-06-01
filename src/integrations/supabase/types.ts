@@ -43,6 +43,48 @@ export type Database = {
           },
         ]
       }
+      chapter_ratings: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_ratings_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           content: string
@@ -107,6 +149,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -188,6 +237,13 @@ export type Database = {
             referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comments_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       line_bookmarks: {
@@ -221,6 +277,52 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_likes: {
+        Row: {
+          created_at: string
+          id: string
+          liker_id: string
+          message_id: string
+          recipient_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          liker_id: string
+          message_id: string
+          recipient_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          liker_id?: string
+          message_id?: string
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_likes_liker_id_fkey"
+            columns: ["liker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_likes_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_likes_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
