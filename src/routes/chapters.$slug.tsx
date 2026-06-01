@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft } from "lucide-react";
+import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -71,6 +71,16 @@ function ChapterPage() {
     },
   });
 
+  const { data: myRating } = useQuery({
+    queryKey: ["chapter-rating", chapter?.id, user?.id],
+    enabled: !!chapter && !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("chapter_ratings").select("rating")
+        .eq("chapter_id", chapter!.id).eq("user_id", user!.id).maybeSingle();
+      return data;
+    },
+  });
+
   const [commentText, setCommentText] = useState("");
 
   useEffect(() => {
@@ -110,6 +120,16 @@ function ChapterPage() {
     qc.invalidateQueries({ queryKey: ["line-bookmarks", chapter.id, user.id] });
   };
 
+  const rateChapter = async (stars: number) => {
+    if (!user) { toast.error("Sign in to rate."); return; }
+    const { error } = await supabase.from("chapter_ratings").upsert(
+      { user_id: user.id, chapter_id: chapter.id, rating: stars },
+      { onConflict: "chapter_id,user_id" }
+    );
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["chapter-rating", chapter.id, user.id] });
+  };
+
   const postComment = async () => {
     if (!user) { toast.error("Sign in to comment."); return; }
     if (!commentText.trim()) return;
@@ -131,6 +151,14 @@ function ChapterPage() {
         <Button onClick={toggleChapterBookmark} variant="outline" size="sm" className="mt-6 border-primary/40">
           {bookmark ? <><BookmarkCheck className="h-4 w-4 mr-2 text-primary" /> Bookmarked</> : <><Bookmark className="h-4 w-4 mr-2" /> Bookmark chapter</>}
         </Button>
+        <div className="mt-6 flex items-center justify-center gap-1">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <button key={s} onClick={() => rateChapter(s)} aria-label={`Rate ${s} stars`}
+              className="text-primary/70 hover:text-primary transition-colors">
+              <Star className={`h-5 w-5 ${(myRating?.rating ?? 0) >= s ? "fill-current text-primary" : ""}`} />
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="prose-like space-y-6 font-body text-lg leading-[1.85]">

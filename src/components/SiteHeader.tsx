@@ -1,12 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut } from "lucide-react";
+import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search } from "lucide-react";
 
 const navItems = [
   { to: "/chapters", label: "Chapters", icon: BookOpen },
   { to: "/chat", label: "Halls", icon: MessagesSquare },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
+  { to: "/users", label: "Seekers", icon: Search },
 ];
 
 export function SiteHeader() {
@@ -59,15 +60,20 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           {user ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="font-sans text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign out
-            </Button>
+            <>
+              <Link to="/profile" aria-label="Your profile" className="text-muted-foreground hover:text-primary transition-colors">
+                <UserCircle2 className="h-6 w-6" />
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="font-sans text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign out
+              </Button>
+            </>
           ) : (
             <Link to="/auth">
               <Button size="sm" className="bg-gold-gradient text-gold-foreground hover:opacity-90 font-sans">
