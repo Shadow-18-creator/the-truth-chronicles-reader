@@ -81,6 +81,21 @@ function ChapterPage() {
     },
   });
 
+  const { data: ratingStats } = useQuery({
+    queryKey: ["chapter-rating-stats", chapter?.id],
+    enabled: !!chapter,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_ratings")
+        .select("rating")
+        .eq("chapter_id", chapter!.id);
+      if (error) throw error;
+      const count = data?.length ?? 0;
+      const avg = count ? (data!.reduce((a, r) => a + r.rating, 0) / count) : 0;
+      return { count, avg };
+    },
+  });
+
   const [commentText, setCommentText] = useState("");
 
   useEffect(() => {
@@ -128,6 +143,8 @@ function ChapterPage() {
     );
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["chapter-rating", chapter.id, user.id] });
+    qc.invalidateQueries({ queryKey: ["chapter-rating-stats", chapter.id] });
+    qc.invalidateQueries({ queryKey: ["chapter-ratings", "all"] });
   };
 
   const postComment = async () => {
@@ -159,6 +176,13 @@ function ChapterPage() {
             </button>
           ))}
         </div>
+        {ratingStats && (
+          <p className="mt-3 font-sans text-xs tracking-widest uppercase text-muted-foreground">
+            {ratingStats.count > 0
+              ? <>Average <span className="text-primary">{ratingStats.avg.toFixed(1)}</span> / 5 · {ratingStats.count} rating{ratingStats.count === 1 ? "" : "s"}</>
+              : <>No ratings yet — be the first</>}
+          </p>
+        )}
       </header>
 
       <div className="prose-like space-y-6 font-body text-lg leading-[1.85]">
