@@ -34,11 +34,19 @@ function ChatRoom() {
     queryFn: async () => {
       const { data } = await supabase
         .from("chat_messages")
-        .select("id, body, user_id, created_at, profiles:user_id(username, display_name)")
+        .select("id, body, user_id, created_at, profiles:user_id(username, display_name, avatar_url)")
         .eq("room_id", room!.id)
         .order("created_at", { ascending: true })
         .limit(200);
       return data ?? [];
+    },
+  });
+
+  const { data: admins } = useQuery({
+    queryKey: ["admin-ids"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      return new Set((data ?? []).map((r: any) => r.user_id));
     },
   });
 
@@ -114,20 +122,36 @@ function ChatRoom() {
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         {messages?.map((m: any) => (
+          (() => {
+            const isAuthor = admins?.has(m.user_id);
+            return (
           <div key={m.id} className="group flex items-start gap-3">
-            <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-sans text-xs shrink-0">
-              {(m.profiles?.display_name || m.profiles?.username || "?")[0]?.toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
+            {m.profiles?.avatar_url ? (
+              <img src={m.profiles.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-sans text-xs shrink-0">
+                {(m.profiles?.display_name || m.profiles?.username || "?")[0]?.toUpperCase()}
+              </div>
+            )}
+            <div className={`flex-1 min-w-0 rounded-lg px-3 py-2 ${
+              isAuthor
+                ? "bg-gold-gradient text-gold-foreground border border-primary/60 shadow-[0_0_20px_rgba(212,175,55,0.25)]"
+                : "bg-white text-slate-900"
+            }`}>
               <div className="flex items-baseline gap-2">
                 {m.profiles?.username ? (
-                  <Link to="/u/$username" params={{ username: m.profiles.username }} className="font-sans text-sm text-primary hover:underline">
+                  <Link
+                    to="/u/$username"
+                    params={{ username: m.profiles.username }}
+                    className={`font-sans text-sm hover:underline ${isAuthor ? "text-gold-foreground font-semibold" : "text-slate-700"}`}
+                  >
                     {m.profiles.display_name || m.profiles.username}
+                    {isAuthor && <span className="ml-2 text-[10px] uppercase tracking-widest">Author</span>}
                   </Link>
                 ) : (
-                  <span className="font-sans text-sm text-primary">Reader</span>
+                  <span className="font-sans text-sm">Reader</span>
                 )}
-                <span className="text-xs text-muted-foreground/60">{format(new Date(m.created_at), "p")}</span>
+                <span className={`text-xs ${isAuthor ? "text-gold-foreground/70" : "text-slate-500"}`}>{format(new Date(m.created_at), "p")}</span>
               </div>
               <p className="font-body break-words">{m.body}</p>
             </div>
@@ -142,6 +166,8 @@ function ChatRoom() {
               {(likeCounts.get(m.id) ?? 0) > 0 && <span>{likeCounts.get(m.id)}</span>}
             </button>
           </div>
+            );
+          })()
         ))}
         {messages && messages.length === 0 && <p className="text-center text-muted-foreground italic py-12">Silence. Be the first to speak.</p>}
         <div ref={endRef} />

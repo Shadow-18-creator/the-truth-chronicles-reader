@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageCircle, Star, Heart, UserCircle2, ShieldCheck } from "lucide-react";
+import { MessageCircle, Star, Heart, UserCircle2, ShieldCheck, Camera } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
@@ -55,6 +55,7 @@ function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [editing, setEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -93,17 +94,44 @@ function ProfilePage() {
     location.reload();
   };
 
+  const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB."); return; }
+    setUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) { setUploading(false); toast.error(upErr.message); return; }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
+    setUploading(false);
+    if (dbErr) { toast.error(dbErr.message); return; }
+    toast.success("Portrait updated.");
+    qc.invalidateQueries({ queryKey: ["profile", user.id] });
+  };
+
   if (loading || !user || !profile) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Summoning your sigil…</div>;
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-3xl">
       <header className="text-center mb-12">
-        <div className="inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center mb-4">
-          <UserCircle2 className="h-16 w-16" />
-        </div>
+        <label className="relative inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center mb-4 cursor-pointer group overflow-hidden border border-primary/30">
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt="Your portrait" className="h-full w-full object-cover" />
+          ) : (
+            <UserCircle2 className="h-16 w-16" />
+          )}
+          <span className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <Camera className="h-6 w-6" />
+          </span>
+          <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploading} />
+        </label>
+        <p className="text-xs text-muted-foreground font-sans mb-2">{uploading ? "Uploading…" : "Click portrait to change"}</p>
         <p className="text-primary text-xs font-sans tracking-[0.3em] uppercase mb-2">@{profile.username}</p>
         <h1 className="font-display text-4xl text-glow">{profile.display_name || profile.username}</h1>
         {profile.bio && <p className="font-body italic text-muted-foreground mt-3 max-w-md mx-auto">{profile.bio}</p>}
+        <p className="text-xs text-muted-foreground/60 font-sans mt-3">Only you see your account email: {user.email}</p>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
