@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ChaptersRouteImport } from './routes/chapters'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 
 const ChaptersRoute = ChaptersRouteImport.update({
   id: '/chapters',
@@ -22,31 +23,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ChaptersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/chapters': typeof ChaptersRoute
+  '/chapters': typeof ChaptersRouteWithChildren
+  '/chapters/$slug': typeof ChaptersSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/chapters': typeof ChaptersRoute
+  '/chapters': typeof ChaptersRouteWithChildren
+  '/chapters/$slug': typeof ChaptersSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/chapters': typeof ChaptersRoute
+  '/chapters': typeof ChaptersRouteWithChildren
+  '/chapters/$slug': typeof ChaptersSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chapters'
+  fullPaths: '/' | '/chapters' | '/chapters/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chapters'
-  id: '__root__' | '/' | '/chapters'
+  to: '/' | '/chapters' | '/chapters/$slug'
+  id: '__root__' | '/' | '/chapters' | '/chapters/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChaptersRoute: typeof ChaptersRoute
+  ChaptersRoute: typeof ChaptersRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +74,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chapters/$slug': {
+      id: '/chapters/$slug'
+      path: '/$slug'
+      fullPath: '/chapters/$slug'
+      preLoaderRoute: typeof ChaptersSlugRouteImport
+      parentRoute: typeof ChaptersRoute
+    }
   }
 }
 
+interface ChaptersRouteChildren {
+  ChaptersSlugRoute: typeof ChaptersSlugRoute
+}
+
+const ChaptersRouteChildren: ChaptersRouteChildren = {
+  ChaptersSlugRoute: ChaptersSlugRoute,
+}
+
+const ChaptersRouteWithChildren = ChaptersRoute._addFileChildren(
+  ChaptersRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChaptersRoute: ChaptersRoute,
+  ChaptersRoute: ChaptersRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
