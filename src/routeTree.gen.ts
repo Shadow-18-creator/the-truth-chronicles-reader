@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ChaptersRouteImport } from './routes/chapters'
@@ -20,6 +21,11 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/users': typeof UsersRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/users': typeof UsersRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/users': typeof UsersRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/chat'
     | '/profile'
+    | '/users'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/chat'
     | '/profile'
+    | '/users'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/chat'
     | '/profile'
+    | '/users'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -155,11 +167,19 @@ export interface RootRouteChildren {
   ChaptersRoute: typeof ChaptersRouteWithChildren
   ChatRoute: typeof ChatRouteWithChildren
   ProfileRoute: typeof ProfileRoute
+  UsersRoute: typeof UsersRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChaptersRoute: ChaptersRouteWithChildren,
   ChatRoute: ChatRouteWithChildren,
   ProfileRoute: ProfileRoute,
+  UsersRoute: UsersRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
