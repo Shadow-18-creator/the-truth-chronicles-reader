@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ChaptersRouteImport } from './routes/chapters'
 import { Route as BookmarksRouteImport } from './routes/bookmarks'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
+  '/profile': typeof ProfileRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
+  '/profile': typeof ProfileRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
+  '/profile': typeof ProfileRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/bookmarks'
     | '/chapters'
     | '/chat'
+    | '/profile'
     | '/chapters/$slug'
     | '/chat/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/bookmarks'
     | '/chapters'
     | '/chat'
+    | '/profile'
     | '/chapters/$slug'
     | '/chat/$slug'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/bookmarks'
     | '/chapters'
     | '/chat'
+    | '/profile'
     | '/chapters/$slug'
     | '/chat/$slug'
   fileRoutesById: FileRoutesById
@@ -130,10 +142,18 @@ export interface RootRouteChildren {
   BookmarksRoute: typeof BookmarksRoute
   ChaptersRoute: typeof ChaptersRouteWithChildren
   ChatRoute: typeof ChatRouteWithChildren
+  ProfileRoute: typeof ProfileRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -222,7 +242,18 @@ const rootRouteChildren: RootRouteChildren = {
   BookmarksRoute: BookmarksRoute,
   ChaptersRoute: ChaptersRouteWithChildren,
   ChatRoute: ChatRouteWithChildren,
+  ProfileRoute: ProfileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
