@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Star } from "lucide-react";
 
 export const Route = createFileRoute("/chapters")({
   head: () => ({
@@ -25,6 +25,24 @@ function ChaptersPage() {
         .order("number", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: ratings } = useQuery({
+    queryKey: ["chapter-ratings", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chapter_ratings")
+        .select("chapter_id, rating");
+      if (error) throw error;
+      const map = new Map<string, { sum: number; count: number }>();
+      for (const r of data ?? []) {
+        const cur = map.get(r.chapter_id) ?? { sum: 0, count: 0 };
+        cur.sum += r.rating;
+        cur.count += 1;
+        map.set(r.chapter_id, cur);
+      }
+      return map;
     },
   });
 
@@ -68,6 +86,21 @@ function ChaptersPage() {
                 <h2 className="font-display text-2xl group-hover:text-primary transition-colors">{c.title}</h2>
                 {c.summary && <p className="font-body text-muted-foreground mt-2 italic line-clamp-2">{c.summary}</p>}
               </div>
+              {(() => {
+                const agg = ratings?.get(c.id);
+                const avg = agg && agg.count ? agg.sum / agg.count : 0;
+                return (
+                  <div className="flex flex-col items-end shrink-0 min-w-[72px]">
+                    <div className="flex items-center gap-1 text-primary">
+                      <Star className="h-4 w-4 fill-current" />
+                      <span className="font-sans text-sm">{agg ? avg.toFixed(1) : "—"}</span>
+                    </div>
+                    <span className="font-sans text-[10px] tracking-widest uppercase text-muted-foreground/70 mt-0.5">
+                      {agg ? `${agg.count} rating${agg.count === 1 ? "" : "s"}` : "no ratings"}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </Link>
         ))}
