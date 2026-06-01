@@ -9,38 +9,166 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as ChaptersRouteImport } from './routes/chapters'
+import { Route as BookmarksRouteImport } from './routes/bookmarks'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
+import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChaptersRoute = ChaptersRouteImport.update({
+  id: '/chapters',
+  path: '/chapters',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookmarksRoute = BookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatSlugRoute = ChatSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ChatRoute,
+} as any)
+const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ChaptersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/bookmarks': typeof BookmarksRoute
+  '/chapters': typeof ChaptersRouteWithChildren
+  '/chat': typeof ChatRouteWithChildren
+  '/chapters/$slug': typeof ChaptersSlugRoute
+  '/chat/$slug': typeof ChatSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/bookmarks': typeof BookmarksRoute
+  '/chapters': typeof ChaptersRouteWithChildren
+  '/chat': typeof ChatRouteWithChildren
+  '/chapters/$slug': typeof ChaptersSlugRoute
+  '/chat/$slug': typeof ChatSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/bookmarks': typeof BookmarksRoute
+  '/chapters': typeof ChaptersRouteWithChildren
+  '/chat': typeof ChatRouteWithChildren
+  '/chapters/$slug': typeof ChaptersSlugRoute
+  '/chat/$slug': typeof ChatSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/bookmarks'
+    | '/chapters'
+    | '/chat'
+    | '/chapters/$slug'
+    | '/chat/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/bookmarks'
+    | '/chapters'
+    | '/chat'
+    | '/chapters/$slug'
+    | '/chat/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/bookmarks'
+    | '/chapters'
+    | '/chat'
+    | '/chapters/$slug'
+    | '/chat/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
+  BookmarksRoute: typeof BookmarksRoute
+  ChaptersRoute: typeof ChaptersRouteWithChildren
+  ChatRoute: typeof ChatRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chapters': {
+      id: '/chapters'
+      path: '/chapters'
+      fullPath: '/chapters'
+      preLoaderRoute: typeof ChaptersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookmarks': {
+      id: '/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof BookmarksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +176,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/$slug': {
+      id: '/chat/$slug'
+      path: '/$slug'
+      fullPath: '/chat/$slug'
+      preLoaderRoute: typeof ChatSlugRouteImport
+      parentRoute: typeof ChatRoute
+    }
+    '/chapters/$slug': {
+      id: '/chapters/$slug'
+      path: '/$slug'
+      fullPath: '/chapters/$slug'
+      preLoaderRoute: typeof ChaptersSlugRouteImport
+      parentRoute: typeof ChaptersRoute
+    }
   }
 }
 
+interface ChaptersRouteChildren {
+  ChaptersSlugRoute: typeof ChaptersSlugRoute
+}
+
+const ChaptersRouteChildren: ChaptersRouteChildren = {
+  ChaptersSlugRoute: ChaptersSlugRoute,
+}
+
+const ChaptersRouteWithChildren = ChaptersRoute._addFileChildren(
+  ChaptersRouteChildren,
+)
+
+interface ChatRouteChildren {
+  ChatSlugRoute: typeof ChatSlugRoute
+}
+
+const ChatRouteChildren: ChatRouteChildren = {
+  ChatSlugRoute: ChatSlugRoute,
+}
+
+const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
+  BookmarksRoute: BookmarksRoute,
+  ChaptersRoute: ChaptersRouteWithChildren,
+  ChatRoute: ChatRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
