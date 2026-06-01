@@ -41,8 +41,12 @@ function PublicProfile() {
         <ArrowLeft className="h-4 w-4" /> Seekers
       </Link>
       <header className="text-center mb-12">
-        <div className="inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center mb-4">
-          <UserCircle2 className="h-16 w-16" />
+        <div className="inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center mb-4 overflow-hidden border border-primary/30">
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt={`${profile.username} portrait`} className="h-full w-full object-cover" />
+          ) : (
+            <UserCircle2 className="h-16 w-16" />
+          )}
         </div>
         <p className="text-primary text-xs font-sans tracking-[0.3em] uppercase mb-2">@{profile.username}</p>
         <h1 className="font-display text-4xl text-glow">{profile.display_name || profile.username}</h1>
