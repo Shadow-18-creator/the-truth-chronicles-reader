@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Your Profile — Nightveil" }] }),
   validateSearch: (search: Record<string, unknown>) => ({
-    edit: search.edit === true,
+    edit: search.edit === true || search.edit === "true",
   }),
   component: ProfilePage,
 });
@@ -77,13 +77,20 @@ function ProfilePage() {
     if (!user) return;
     const clean = username.toLowerCase().replace(/[^a-z0-9_]/g, "");
     if (clean.length < 3) { toast.error("Username must be 3+ chars (a-z, 0-9, _)."); return; }
-    const { error } = await supabase.from("profiles").update({
+    if (clean !== profile?.username) {
+      const { data: taken } = await supabase.from("profiles").select("id").eq("username", clean).neq("id", user.id).maybeSingle();
+      if (taken) { toast.error("That sigil is already taken."); return; }
+    }
+    const { data: updated, error } = await supabase.from("profiles").update({
       username: clean, display_name: displayName.trim() || clean, bio: bio.trim() || null,
-    }).eq("id", user.id);
+    }).eq("id", user.id).select().maybeSingle();
     if (error) { toast.error(error.message); return; }
+    if (!updated) { toast.error("Could not save — please sign in again."); return; }
     toast.success("Profile saved.");
     setEditing(false);
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    qc.invalidateQueries({ queryKey: ["profile-by-username"] });
+    navigate({ to: "/profile", search: { edit: false }, replace: true });
   };
 
   const { data: anyAdmin } = useQuery({
