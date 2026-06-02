@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Send, Heart } from "lucide-react";
+import { Send, Heart, Trash2, Ban } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/chat/$slug")({
@@ -46,6 +46,14 @@ function ChatRoom() {
     queryKey: ["admin-ids"],
     queryFn: async () => {
       const { data } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      return new Set((data ?? []).map((r: any) => r.user_id));
+    },
+  });
+
+  const { data: blockedSet } = useQuery({
+    queryKey: ["blocked-users"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("blocked_users").select("user_id");
       return new Set((data ?? []).map((r: any) => r.user_id));
     },
   });
@@ -111,6 +119,27 @@ function ChatRoom() {
     qc.invalidateQueries({ queryKey: ["message-likes", room?.id] });
   };
 
+  const deleteMessage = async (id: string) => {
+    if (!confirm("Delete this message?")) return;
+    const { error } = await supabase.from("chat_messages").delete().eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
+  const toggleBlock = async (targetUserId: string) => {
+    if (!user || !isAdmin) return;
+    if (blockedSet?.has(targetUserId)) {
+      const { error } = await (supabase as any).from("blocked_users").delete().eq("user_id", targetUserId);
+      if (error) { toast.error(error.message); return; }
+      toast.success("User unblocked.");
+    } else {
+      if (!confirm("Block this user from posting?")) return;
+      const { error } = await (supabase as any).from("blocked_users").insert({ user_id: targetUserId, blocked_by: user.id });
+      if (error) { toast.error(error.message); return; }
+      toast.success("User blocked.");
+    }
+    qc.invalidateQueries({ queryKey: ["blocked-users"] });
+  };
+
   if (!room) return <div className="p-8 text-muted-foreground">Loading room…</div>;
 
   return (
@@ -124,6 +153,8 @@ function ChatRoom() {
         {messages?.map((m: any) => (
           (() => {
             const isAuthor = admins?.has(m.user_id);
+            const isBlocked = blockedSet?.has(m.user_id);
+            const canDelete = user && (user.id === m.user_id || isAdmin);
             return (
           <div key={m.id} className="group flex items-start gap-3">
             {m.profiles?.avatar_url ? (
@@ -147,6 +178,7 @@ function ChatRoom() {
                   >
                     {m.profiles.display_name || m.profiles.username}
                     {isAuthor && <span className="ml-2 text-[10px] uppercase tracking-widest">Author</span>}
+                    {isBlocked && <span className="ml-2 text-[10px] uppercase tracking-widest text-destructive">Blocked</span>}
                   </Link>
                 ) : (
                   <span className="font-sans text-sm">Reader</span>
@@ -155,16 +187,38 @@ function ChatRoom() {
               </div>
               <p className="font-body break-words">{m.body}</p>
             </div>
-            <button
-              onClick={() => toggleLike(m)}
-              className={`flex items-center gap-1 text-xs font-sans px-2 py-1 rounded-md transition-colors ${
-                likedByMe.has(m.id) ? "text-primary" : "text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100"
-              } ${(likeCounts.get(m.id) ?? 0) > 0 ? "!opacity-100" : ""}`}
-              aria-label="Like message"
-            >
-              <Heart className={`h-3.5 w-3.5 ${likedByMe.has(m.id) ? "fill-current" : ""}`} />
-              {(likeCounts.get(m.id) ?? 0) > 0 && <span>{likeCounts.get(m.id)}</span>}
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => toggleLike(m)}
+                className={`flex items-center gap-1 text-xs font-sans px-2 py-1 rounded-md transition-colors ${
+                  likedByMe.has(m.id) ? "text-primary" : "text-muted-foreground/60 hover:text-primary opacity-0 group-hover:opacity-100"
+                } ${(likeCounts.get(m.id) ?? 0) > 0 ? "!opacity-100" : ""}`}
+                aria-label="Like message"
+              >
+                <Heart className={`h-3.5 w-3.5 ${likedByMe.has(m.id) ? "fill-current" : ""}`} />
+                {(likeCounts.get(m.id) ?? 0) > 0 && <span>{likeCounts.get(m.id)}</span>}
+              </button>
+              {isAdmin && user && user.id !== m.user_id && (
+                <button
+                  onClick={() => toggleBlock(m.user_id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1.5 py-1 rounded-md text-muted-foreground/60 hover:text-destructive"
+                  aria-label={isBlocked ? "Unblock user" : "Block user"}
+                  title={isBlocked ? "Unblock user" : "Block user"}
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => deleteMessage(m.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1.5 py-1 rounded-md text-muted-foreground/60 hover:text-destructive"
+                  aria-label="Delete message"
+                  title="Delete message"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
             );
           })()
