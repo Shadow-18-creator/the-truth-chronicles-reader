@@ -137,7 +137,7 @@ function RootComponent() {
             <Outlet />
           </main>
           <footer className="border-t border-border/40 py-8 text-center text-sm text-muted-foreground">
-            <p className="font-display tracking-widest text-xs uppercase">Nightveil</p>
+            <p className="font-display tracking-widest text-xs uppercase">The Boy Who Saw The Truth</p>
             <p className="mt-2">Tread softly — the veil is thin.</p>
           </footer>
         </div>
