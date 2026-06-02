@@ -42,13 +42,13 @@ function ProfilePage() {
     queryFn: async () => {
       const [c, r, l] = await Promise.all([
         supabase.from("comments").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
-        supabase.from("chapter_ratings").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.rpc("user_chapters_rated_count", { _user_id: user!.id }),
         supabase.from("message_likes").select("id", { count: "exact", head: true }).eq("recipient_id", user!.id),
       ]);
       const given = await supabase.from("message_likes").select("id", { count: "exact", head: true }).eq("liker_id", user!.id);
       return {
         comments: c.count ?? 0,
-        ratings: r.count ?? 0,
+        ratings: (r.data as number | null) ?? 0,
         likesReceived: l.count ?? 0,
         likesGiven: given.count ?? 0,
       };
