@@ -26,8 +26,8 @@ export function SiteHeader() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 group">
           <Moon className="h-5 w-5 text-primary group-hover:rotate-12 transition-transform" />
-          <span className="font-display text-xl tracking-[0.2em] uppercase text-glow">
-            Nightveil
+          <span className="font-display text-lg md:text-xl tracking-[0.15em] uppercase text-glow leading-tight">
+            The Boy Who Saw The Truth
           </span>
         </Link>
 
