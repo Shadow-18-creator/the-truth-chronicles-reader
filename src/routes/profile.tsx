@@ -20,6 +20,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const search = useSearch({ from: "/profile" });
   const qc = useQueryClient();
 
   useEffect(() => {
