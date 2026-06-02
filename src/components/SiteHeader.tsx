@@ -1,7 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search, Pencil } from "lucide-react";
 
 const navItems = [
   { to: "/chapters", label: "Chapters", icon: BookOpen },
