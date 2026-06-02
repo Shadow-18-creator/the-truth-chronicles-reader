@@ -380,37 +380,7 @@ export type Database = {
       }
     }
     Views: {
-      chapter_rating_stats: {
-        Row: {
-          avg_rating: number | null
-          chapter_id: string | null
-          rating_count: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chapter_ratings_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapters"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_rating_counts: {
-        Row: {
-          rating_count: number | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chapter_ratings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
@@ -420,6 +390,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_chapter_rating: { Args: { _chapter_id: string }; Returns: number }
+      user_chapters_rated_count: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"
