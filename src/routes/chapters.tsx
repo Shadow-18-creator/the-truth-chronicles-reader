@@ -7,8 +7,8 @@ import { BookOpen, Star } from "lucide-react";
 export const Route = createFileRoute("/chapters")({
   head: () => ({
     meta: [
-      { title: "Chapters — Nightveil" },
-      { name: "description", content: "All published chapters of Nightveil." },
+      { title: "Chapters — The Boy Who Saw The Truth" },
+      { name: "description", content: "All published chapters of The Boy Who Saw The Truth." },
     ],
   }),
   component: ChaptersPage,

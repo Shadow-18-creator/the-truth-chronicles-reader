@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MessagesSquare, Crown, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/chat")({
-  head: () => ({ meta: [{ title: "The Halls — Nightveil" }] }),
+  head: () => ({ meta: [{ title: "The Halls — The Boy Who Saw The Truth" }] }),
   component: ChatLayout,
 });
 

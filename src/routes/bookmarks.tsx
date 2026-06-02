@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Bookmark } from "lucide-react";
 
 export const Route = createFileRoute("/bookmarks")({
-  head: () => ({ meta: [{ title: "Your Bookmarks — Nightveil" }] }),
+  head: () => ({ meta: [{ title: "Your Bookmarks — The Boy Who Saw The Truth" }] }),
   component: BookmarksPage,
 });
 
