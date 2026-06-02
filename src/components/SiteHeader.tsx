@@ -68,18 +68,49 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link to="/profile" aria-label="Your profile" className="text-muted-foreground hover:text-primary transition-colors">
-                <UserCircle2 className="h-6 w-6" />
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-                className="font-sans text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign out
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    aria-label="Your profile"
+                    className="relative h-9 w-9 rounded-full overflow-hidden border border-primary/30 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {user.user_metadata?.avatar_url || (() => {
+                      // We'll fetch profile in a tiny inline way or just show icon
+                      return null;
+                    })() ? (
+                      <img
+                        src={user.user_metadata?.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle2 className="h-6 w-6" />
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <UserCircle2 className="h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" search={{ edit: true }} className="cursor-pointer">
+                      <Pencil className="h-4 w-4" />
+                      Change Username
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={signOut}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <Link to="/auth">
