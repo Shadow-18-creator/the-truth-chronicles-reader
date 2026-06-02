@@ -74,18 +74,7 @@ export function SiteHeader() {
                     aria-label="Your profile"
                     className="relative h-9 w-9 rounded-full overflow-hidden border border-primary/30 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {user.user_metadata?.avatar_url || (() => {
-                      // We'll fetch profile in a tiny inline way or just show icon
-                      return null;
-                    })() ? (
-                      <img
-                        src={user.user_metadata?.avatar_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <UserCircle2 className="h-6 w-6" />
-                    )}
+                    <UserCircle2 className="h-6 w-6" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
