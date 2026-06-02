@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star } from "lucide-react";
+import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/chapters/$slug")({
 
 function ChapterPage() {
   const { slug } = Route.useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
 
   const { data: chapter, isLoading } = useQuery({
@@ -154,6 +154,12 @@ function ChapterPage() {
     setCommentText("");
   };
 
+  const deleteComment = async (id: string) => {
+    const { error } = await supabase.from("comments").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["comments", chapter.id] });
+  };
+
   return (
     <article className="container mx-auto px-4 py-16 max-w-3xl">
       <Link to="/chapters" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8 font-sans">
@@ -224,11 +230,23 @@ function ChapterPage() {
 
         <div className="space-y-4">
           {comments?.map((c: any) => (
-            <div key={c.id} className="rounded-lg border border-border/40 bg-card/40 p-4">
-              <p className="text-xs font-sans text-primary mb-1">
-                {c.profiles?.display_name || c.profiles?.username || "Reader"}
-              </p>
-              <p className="font-body">{c.body}</p>
+            <div key={c.id} className="group rounded-lg border border-border/40 bg-card/40 p-4 flex justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-sans text-primary mb-1">
+                  {c.profiles?.display_name || c.profiles?.username || "Reader"}
+                </p>
+                <p className="font-body break-words">{c.body}</p>
+              </div>
+              {(user && (user.id === c.user_id || isAdmin)) && (
+                <button
+                  onClick={() => deleteComment(c.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
+                  aria-label="Delete comment"
+                  title={isAdmin && user.id !== c.user_id ? "Delete (admin)" : "Delete"}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
           ))}
           {comments && comments.length === 0 && <p className="text-muted-foreground italic">No whispers yet. Be the first.</p>}
