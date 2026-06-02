@@ -10,7 +10,7 @@ import { MessageCircle, Star, Heart, UserCircle2, ShieldCheck, Camera } from "lu
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "Your Profile — Nightveil" }] }),
+  head: () => ({ meta: [{ title: "Your Profile — The Boy Who Saw The Truth" }] }),
   validateSearch: (search: Record<string, unknown>) => ({
     edit: search.edit === true || search.edit === "true",
   }),

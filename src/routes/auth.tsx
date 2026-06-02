@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Moon } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Enter — Nightveil" }] }),
+  head: () => ({ meta: [{ title: "Enter — The Boy Who Saw The Truth" }] }),
   component: AuthPage,
 });
 
@@ -29,7 +29,7 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin },
       });
       if (error) toast.error(error.message);
-      else { toast.success("Welcome to Nightveil."); navigate({ to: "/" }); }
+      else { toast.success("Welcome to The Boy Who Saw The Truth."); navigate({ to: "/" }); }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) toast.error(error.message);

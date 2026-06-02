@@ -8,9 +8,9 @@ import { BookOpen, MessagesSquare, Sparkles, ArrowRight } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Nightveil — A Mystical Serial Novel" },
+      { title: "The Boy Who Saw The Truth — A Mystical Serial Novel" },
       { name: "description", content: "Read the latest chapters, mark passages that haunt you, and gather with fellow readers in the mystical halls." },
-      { property: "og:title", content: "Nightveil — A Mystical Serial Novel" },
+      { property: "og:title", content: "The Boy Who Saw The Truth — A Mystical Serial Novel" },
       { property: "og:description", content: "Read, bookmark, and discuss a serialized novel of veils and shadows." },
     ],
   }),
@@ -52,7 +52,7 @@ function Index() {
             A serial of veils and shadows
           </p>
           <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-semibold text-glow leading-[1.05] mb-6">
-            Nightveil
+            The Boy Who Saw The Truth
           </h1>
           <p className="font-body text-xl md:text-2xl italic text-muted-foreground max-w-2xl mx-auto mb-10">
             "Some doors only open at the hour the moon forgets her name."

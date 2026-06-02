@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Search, UserCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/users")({
-  head: () => ({ meta: [{ title: "Seekers — Nightveil" }] }),
+  head: () => ({ meta: [{ title: "Seekers — The Boy Who Saw The Truth" }] }),
   component: UsersPage,
 });
 
