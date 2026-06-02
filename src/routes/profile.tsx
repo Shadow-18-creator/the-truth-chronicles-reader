@@ -11,6 +11,9 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Your Profile — Nightveil" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    edit: search.edit === true,
+  }),
   component: ProfilePage,
 });
 
