@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,12 +11,16 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Your Profile — Nightveil" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    edit: search.edit === true,
+  }),
   component: ProfilePage,
 });
 
 function ProfilePage() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const search = useSearch({ from: "/profile" });
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -56,6 +60,10 @@ function ProfilePage() {
   const [bio, setBio] = useState("");
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (search.edit) setEditing(true);
+  }, [search.edit]);
 
   useEffect(() => {
     if (profile) {
