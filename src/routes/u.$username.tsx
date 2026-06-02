@@ -25,10 +25,10 @@ function PublicProfile() {
     queryFn: async () => {
       const [c, r, l] = await Promise.all([
         supabase.from("comments").select("id", { count: "exact", head: true }).eq("user_id", profile!.id),
-        supabase.from("chapter_ratings").select("id", { count: "exact", head: true }).eq("user_id", profile!.id),
+        supabase.rpc("user_chapters_rated_count", { _user_id: profile!.id }),
         supabase.from("message_likes").select("id", { count: "exact", head: true }).eq("recipient_id", profile!.id),
       ]);
-      return { comments: c.count ?? 0, ratings: r.count ?? 0, likesReceived: l.count ?? 0 };
+      return { comments: c.count ?? 0, ratings: (r.data as number | null) ?? 0, likesReceived: l.count ?? 0 };
     },
   });
 

@@ -75,9 +75,8 @@ function ChapterPage() {
     queryKey: ["chapter-rating", chapter?.id, user?.id],
     enabled: !!chapter && !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("chapter_ratings").select("rating")
-        .eq("chapter_id", chapter!.id).eq("user_id", user!.id).maybeSingle();
-      return data;
+      const { data } = await supabase.rpc("my_chapter_rating", { _chapter_id: chapter!.id });
+      return data == null ? null : { rating: data as number };
     },
   });
 

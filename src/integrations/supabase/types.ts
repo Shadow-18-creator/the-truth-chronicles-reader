@@ -390,6 +390,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_chapter_rating: { Args: { _chapter_id: string }; Returns: number }
+      user_chapters_rated_count: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"
