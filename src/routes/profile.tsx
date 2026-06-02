@@ -62,6 +62,10 @@ function ProfilePage() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
+    if (search.edit) setEditing(true);
+  }, [search.edit]);
+
+  useEffect(() => {
     if (profile) {
       setUsername(profile.username ?? "");
       setDisplayName(profile.display_name ?? "");
