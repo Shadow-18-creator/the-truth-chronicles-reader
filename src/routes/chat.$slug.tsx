@@ -231,8 +231,8 @@ function ChatRoom() {
         <p className="px-6 py-4 border-t border-border/40 text-sm text-muted-foreground italic">Only the author may speak here.</p>
       ) : (
         <form onSubmit={send} className="flex gap-2 px-6 py-4 border-t border-border/40">
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder={user ? "Speak into the dark…" : "Sign in to chat"} disabled={!user} className="bg-input/40 border-border/40 font-body" />
-          <Button type="submit" disabled={!user || !text.trim()} className="bg-gold-gradient text-gold-foreground"><Send className="h-4 w-4" /></Button>
+          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder={user ? "Speak into the dark…" : "Sign in to chat"} disabled={!user} aria-label="Chat message" className="bg-input/40 border-border/40 font-body" />
+          <Button type="submit" disabled={!user || !text.trim()} aria-label="Send message" className="bg-gold-gradient text-gold-foreground"><Send className="h-4 w-4" /><span className="sr-only">Send</span></Button>
         </form>
       )}
     </div>
