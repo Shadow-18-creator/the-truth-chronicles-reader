@@ -1,0 +1,10 @@
+# The Boy Who Saw The Truth
+
+> A serialized mystical novel. Readers can read chapters, bookmark moments, rate chapters, and gather in discussion halls.
+
+## Pages
+
+- [Home](/): Landing page with latest chapters and intro.
+- [Chapters](/chapters): Full list of published chapters.
+- [Halls](/chat): Discussion rooms for readers.
+- [Seekers](/users): Public reader profiles.

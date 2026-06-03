@@ -11,7 +11,13 @@ import { toast } from "sonner";
 import { ShieldCheck, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Scriptorium — The Boy Who Saw The Truth" }] }),
+  head: () => ({
+    meta: [
+      { title: "Scriptorium — The Boy Who Saw The Truth" },
+      { name: "description", content: "Admin scriptorium for publishing and managing chapters of The Boy Who Saw The Truth." },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: AdminPage,
 });
 

@@ -4,6 +4,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle, Star, Heart, UserCircle2, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/u/$username")({
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username, display_name, bio")
+      .eq("username", params.username)
+      .maybeSingle();
+    return { profile: data };
+  },
+  head: ({ params, loaderData }) => {
+    const p = loaderData?.profile;
+    const url = `https://the-truth-chronicles-reader.lovable.app/u/${params.username}`;
+    const name = p?.display_name || p?.username || params.username;
+    const title = `${name} (@${params.username}) — Seeker on The Boy Who Saw The Truth`;
+    const description = (p?.bio?.slice(0, 158)) ||
+      `Profile of seeker ${name} on The Boy Who Saw The Truth.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "profile" },
+        { property: "og:url", content: url },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   component: PublicProfile,
 });
 

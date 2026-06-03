@@ -10,7 +10,13 @@ import { MessageCircle, Star, Heart, UserCircle2, ShieldCheck, Camera } from "lu
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "Your Profile — The Boy Who Saw The Truth" }] }),
+  head: () => ({
+    meta: [
+      { title: "Your Profile — The Boy Who Saw The Truth" },
+      { name: "description", content: "Manage your seeker profile, change your username, and view your reading activity on The Boy Who Saw The Truth." },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>) => ({
     edit: search.edit === true || search.edit === "true",
   }),

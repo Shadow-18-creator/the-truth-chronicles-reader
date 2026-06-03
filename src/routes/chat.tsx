@@ -4,7 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { MessagesSquare, Crown, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/chat")({
-  head: () => ({ meta: [{ title: "The Halls — The Boy Who Saw The Truth" }] }),
+  head: () => ({
+    meta: [
+      { title: "The Halls — The Boy Who Saw The Truth" },
+      { name: "description", content: "Gather in the mystical halls to discuss chapters, theorize, and meet fellow readers of the serial novel." },
+      { property: "og:title", content: "The Halls — The Boy Who Saw The Truth" },
+      { property: "og:description", content: "Gather in the mystical halls to discuss chapters and meet fellow readers." },
+      { property: "og:url", content: "https://the-truth-chronicles-reader.lovable.app/chat" },
+    ],
+    links: [{ rel: "canonical", href: "https://the-truth-chronicles-reader.lovable.app/chat" }],
+  }),
   component: ChatLayout,
 });
 
