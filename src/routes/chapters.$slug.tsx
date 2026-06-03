@@ -9,6 +9,49 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/chapters/$slug")({
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("chapters")
+      .select("title, summary, number, published_at")
+      .eq("slug", params.slug)
+      .maybeSingle();
+    return { chapter: data };
+  },
+  head: ({ params, loaderData }) => {
+    const ch = loaderData?.chapter;
+    const url = `https://the-truth-chronicles-reader.lovable.app/chapters/${params.slug}`;
+    const title = ch
+      ? `Chapter ${ch.number}: ${ch.title} — The Boy Who Saw The Truth`
+      : "Chapter — The Boy Who Saw The Truth";
+    const description = ch?.summary
+      ? ch.summary.slice(0, 158)
+      : "Read this chapter of The Boy Who Saw The Truth, a serial novel of veils and shadows.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: ch
+        ? [
+            {
+              type: "application/ld+json",
+              children: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Article",
+                headline: ch.title,
+                datePublished: ch.published_at,
+                description,
+              }),
+            },
+          ]
+        : [],
+    };
+  },
   component: ChapterPage,
 });
 

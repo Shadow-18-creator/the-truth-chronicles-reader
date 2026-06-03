@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ChaptersRouteImport } from './routes/chapters'
@@ -24,6 +25,11 @@ import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/chat'
     | '/profile'
+    | '/sitemap.xml'
     | '/users'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/chat'
     | '/profile'
+    | '/sitemap.xml'
     | '/users'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/chat'
     | '/profile'
+    | '/sitemap.xml'
     | '/users'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   ChaptersRoute: typeof ChaptersRouteWithChildren
   ChatRoute: typeof ChatRouteWithChildren
   ProfileRoute: typeof ProfileRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UsersRoute: typeof UsersRoute
   UUsernameRoute: typeof UUsernameRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChaptersRoute: ChaptersRouteWithChildren,
   ChatRoute: ChatRouteWithChildren,
   ProfileRoute: ProfileRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UsersRoute: UsersRoute,
   UUsernameRoute: UUsernameRoute,
 }

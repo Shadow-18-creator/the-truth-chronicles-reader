@@ -5,7 +5,13 @@ import { useAuth } from "@/lib/auth-context";
 import { Bookmark } from "lucide-react";
 
 export const Route = createFileRoute("/bookmarks")({
-  head: () => ({ meta: [{ title: "Your Bookmarks — The Boy Who Saw The Truth" }] }),
+  head: () => ({
+    meta: [
+      { title: "Your Bookmarks — The Boy Who Saw The Truth" },
+      { name: "description", content: "Revisit the chapters and passages you saved while reading The Boy Who Saw The Truth." },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: BookmarksPage,
 });
 
