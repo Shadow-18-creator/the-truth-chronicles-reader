@@ -262,6 +262,7 @@ function ChapterPage() {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Leave a whisper…"
+              aria-label="Write a comment"
               className="bg-card/40 border-border/40 font-body"
               rows={3}
             />

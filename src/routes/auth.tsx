@@ -51,12 +51,12 @@ function AuthPage() {
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <Label className="font-sans text-xs uppercase tracking-widest text-muted-foreground">Email</Label>
-            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-input/40 border-border/60 mt-1" />
+            <Label htmlFor="auth-email" className="font-sans text-xs uppercase tracking-widest text-muted-foreground">Email</Label>
+            <Input id="auth-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-input/40 border-border/60 mt-1" />
           </div>
           <div>
-            <Label className="font-sans text-xs uppercase tracking-widest text-muted-foreground">Password</Label>
-            <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-input/40 border-border/60 mt-1" />
+            <Label htmlFor="auth-password" className="font-sans text-xs uppercase tracking-widest text-muted-foreground">Password</Label>
+            <Input id="auth-password" type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-input/40 border-border/60 mt-1" />
           </div>
           <Button type="submit" disabled={loading} className="w-full bg-gold-gradient text-gold-foreground font-sans glow-gold">
             {loading ? "…" : mode === "signin" ? "Enter" : "Create account"}

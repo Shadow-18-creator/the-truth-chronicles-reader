@@ -55,6 +55,9 @@ function Index() {
           </p>
           <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-semibold text-glow leading-[1.05] mb-6">
             The Boy Who Saw The Truth
+            <span className="block mt-4 text-2xl md:text-3xl font-body italic text-muted-foreground font-normal">
+              A Mystical Serial Novel
+            </span>
           </h1>
           <p className="font-body text-xl md:text-2xl italic text-muted-foreground max-w-2xl mx-auto mb-10">
             "Some doors only open at the hour the moon forgets her name."
