@@ -80,14 +80,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "The Boy Who Learned The Truthl — Read the Novel" },
+      { title: "The Boy Who Saw The Truth — Read the Novel" },
       { name: "description", content: "Read the latest chapters, bookmark your likable moments and gather in the mystical halls of truth chronicles." },
-      { property: "og:title", content: "The Boy Who Learned The Truthl — Read the Novel" },
+      { property: "og:title", content: "The Boy Who Saw The Truth — Read the Novel" },
       { property: "og:description", content: "Read the latest chapters, bookmark your likable moments and gather in the mystical halls of truth chronicles." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "The Boy Who Learned The Truthl — Read the Novel" },
+      { name: "twitter:title", content: "The Boy Who Saw The Truth — Read the Novel" },
       { name: "twitter:description", content: "Read the latest chapters, bookmark your likable moments and gather in the mystical halls of truth chronicles." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/bb880745-5c55-4687-a78e-0c8b838fc11f" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/bb880745-5c55-4687-a78e-0c8b838fc11f" },
@@ -102,6 +102,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "The Boy Who Saw The Truth",
+          url: "https://the-truth-chronicles-reader.lovable.app",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "The Boy Who Saw The Truth",
+          url: "https://the-truth-chronicles-reader.lovable.app",
+        }),
       },
     ],
   }),
