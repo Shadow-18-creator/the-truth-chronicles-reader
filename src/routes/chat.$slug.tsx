@@ -51,7 +51,8 @@ function ChatRoom() {
   });
 
   const { data: blockedSet } = useQuery({
-    queryKey: ["blocked-users"],
+    queryKey: ["blocked-users", isAdmin],
+    enabled: !!isAdmin,
     queryFn: async () => {
       const { data } = await (supabase as any).from("blocked_users").select("user_id");
       return new Set((data ?? []).map((r: any) => r.user_id));
