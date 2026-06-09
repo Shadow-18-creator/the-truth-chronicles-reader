@@ -351,6 +351,27 @@ export type Database = {
           },
         ]
       }
+      novel_meta: {
+        Row: {
+          id: boolean
+          summary: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          summary?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          summary?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
