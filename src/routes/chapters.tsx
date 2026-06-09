@@ -19,9 +19,11 @@ export const Route = createFileRoute("/chapters")({
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          name: "Chapters of The Boy Who Saw The Truth",
+          "@type": "Book",
+          name: "The Boy Who Saw The Truth",
           url: "https://the-truth-chronicles-reader.lovable.app/chapters",
+          bookFormat: "https://schema.org/EBook",
+          inLanguage: "en",
         }),
       },
     ],
