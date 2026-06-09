@@ -8,7 +8,13 @@ import { toast } from "sonner";
 import { Moon } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Enter — The Boy Who Saw The Truth" }] }),
+  head: () => ({
+    meta: [
+      { title: "Enter — The Boy Who Saw The Truth" },
+      { name: "description", content: "Sign in or create an account to bookmark chapters, rate them, and join the reader halls." },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AuthPage,
 });
 

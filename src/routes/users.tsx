@@ -6,7 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Search, UserCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/users")({
-  head: () => ({ meta: [{ title: "Seekers — The Boy Who Saw The Truth" }] }),
+  head: () => ({
+    meta: [
+      { title: "Seekers — Readers of The Boy Who Saw The Truth" },
+      { name: "description", content: "Browse fellow seekers reading The Boy Who Saw The Truth. Find readers, see profiles, and join the conversation." },
+      { property: "og:title", content: "Seekers — Readers of The Boy Who Saw The Truth" },
+      { property: "og:description", content: "Browse fellow seekers reading The Boy Who Saw The Truth." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://the-truth-chronicles-reader.lovable.app/users" },
+      { name: "twitter:title", content: "Seekers — Readers of The Boy Who Saw The Truth" },
+      { name: "twitter:description", content: "Browse fellow seekers reading The Boy Who Saw The Truth." },
+    ],
+    links: [{ rel: "canonical", href: "https://the-truth-chronicles-reader.lovable.app/users" }],
+  }),
   component: UsersPage,
 });
 
