@@ -1,53 +1,53 @@
-## Good news first
+## Goal
 
-Two things you asked about already exist in the project, so we don't have to start from zero:
+On the home page, add two pieces of novel-level content that you (as admin) can edit inline:
 
-1. **`public/robots.txt`** is already present — it tells Google "you can crawl everything" and points to the sitemap.
-2. **`src/routes/sitemap[.]xml.ts`** dynamically lists every page (home, chapters, every chapter slug, chat, users, profiles). Google uses this to discover your full site.
+1. **Tag chips** (e.g., "Psychological", "Action", "Supernatural", "Mythology meets Cyberpunk") rendered as styled badges below the hero / above the latest chapters.
+2. **A collapsible "About the story" summary** dropdown, also above the latest chapters, below the title section.
 
-And about the "JavaScript single-page" concern: this project is **TanStack Start**, which **server-renders every route by default**. When Googlebot fetches `/chapters/<slug>`, it receives fully-rendered HTML with that chapter's title, description, and content — not an empty shell. So Google already sees this as a multi-page website, not a SPA.
+Both will be editable directly on the home page when signed in as admin — no separate admin screen needed.
 
-The real reason a JS site can look like "one page" to Google is when each route reuses the home page's `<title>`/`<meta>` tags. I checked — most routes have their own `head()`, but a couple are too thin, and none of them advertise a canonical URL. That's what to fix.
+## Backend changes
 
-## What to change
+Create a new singleton settings table so values persist and any future page can reuse them.
 
-### 1. Verify `robots.txt` — no edits needed
-Current content is already correct:
-```
-User-agent: *
-Allow: /
+**New table `public.novel_meta`** (single row, enforced by a `singleton` boolean primary-key trick):
 
-Sitemap: https://the-truth-chronicles-reader.lovable.app/sitemap.xml
-```
-I'll just confirm it's there and explain it in chat.
+| column | type | notes |
+|---|---|---|
+| `id` | `boolean` PK, default `true`, check `id = true` | enforces single row |
+| `summary` | `text` | the About paragraph(s) |
+| `tags` | `text[]` default `'{}'` | tag list, free-form strings |
+| `updated_at` | `timestamptz` default `now()` | |
 
-### 2. Beef up thin route metadata
-Two routes only set a `<title>` — add `description`, `og:title`, `og:description`, `og:type`, `twitter:*` so each shares distinctly on social and indexes with its own snippet:
-- `src/routes/users.tsx`
-- `src/routes/auth.tsx` (will also keep `noindex` since it's a sign-in page — auth pages shouldn't be in Google results)
+**RLS / grants**
+- `GRANT SELECT ON public.novel_meta TO anon, authenticated;` (publicly readable so the home page renders the summary/tags for everyone)
+- `GRANT INSERT, UPDATE ON public.novel_meta TO authenticated;` (gated by policy below)
+- `GRANT ALL ON public.novel_meta TO service_role;`
+- Enable RLS.
+- Policies:
+  - `SELECT`: `USING (true)` — public read.
+  - `INSERT`: `WITH CHECK (public.has_role(auth.uid(), 'admin'))`
+  - `UPDATE`: `USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'))`
+- Seed the single row in the same migration with empty defaults so the home page always has something to read from.
 
-### 3. Add canonical URL + `og:url` to every public route
-This is the single biggest signal that tells Google "this is a distinct page with its own address." Add per route (leaf only — never on `__root.tsx`, per TanStack docs):
-- `/` (index.tsx)
-- `/chapters` (chapters.tsx)
-- `/chapters/$slug` (chapters.$slug.tsx — dynamic, built from `params.slug`)
-- `/chat` (chat.tsx)
-- `/users` (users.tsx)
-- `/u/$username` (u.$username.tsx — dynamic)
-- `/bookmarks`, `/profile` — add `noindex` (private user pages)
-- `/auth`, `/admin` — keep `noindex` (already on admin)
+## Frontend changes (only `src/routes/index.tsx`)
 
-### 4. Stronger structured data
-- `src/routes/chapters.$slug.tsx`: add JSON-LD `Article` schema (headline, datePublished, author, articleBody snippet) built from loader data — gets chapters eligible for richer Google results.
-- `src/routes/chapters.tsx`: add JSON-LD `Book` + `ItemList` of chapters so Google understands this is a novel with an ordered chapter list.
+Insert a new section between the hero (line 80) and the "Latest Chapters" section (line 82):
 
-### 5. Keep sitemap accurate
-The sitemap server route already includes chapters and user profiles. No change needed unless you want me to also drop `/auth`, `/bookmarks`, `/profile` from it (they shouldn't be indexed). Recommended: remove `/auth`.
+- Fetch `novel_meta` via `useQuery`.
+- **Tags row**: render each tag as a `<Badge>` chip in a centered flex-wrap. If no tags and not admin, hide section. If admin, show an "Edit tags" pencil button.
+- **Summary disclosure**: use the existing shadcn `Collapsible` (or `<details>` styled) with trigger label "About the story" + chevron icon. Closed by default. Renders `summary` text inside. If admin and empty, shows "Add a summary".
+- **Inline admin editor** (only for `isAdmin`, from `useAuth()`):
+  - Tags: a small dialog/popover with a textarea (one tag per line) or comma-separated input. Save calls `supabase.from('novel_meta').update({ tags }).eq('id', true)`. Invalidate the query.
+  - Summary: an edit pencil opens a `<Textarea>` inline; Save updates `summary` the same way.
+- Use existing UI primitives (`Badge`, `Button`, `Textarea`, `Collapsible`, `Dialog`) — no new dependencies.
 
 ## What I won't touch
 
-- `__root.tsx` site-wide defaults stay (canonical/og:url belong on leaves only — adding them to root would emit duplicates across every page).
-- Page content, layout, styling. This is metadata-only.
-- The sitemap mechanism itself.
+- Other routes, components, the chapters table, styling tokens.
+- No admin page additions — editing happens on the home page itself, gated by `isAdmin`.
 
-After this, ask Google Search Console to "Request indexing" on a couple of chapter URLs and you'll see each route appear as its own result.
+## Edit visibility
+
+Only you (admin) see the edit buttons. Everyone else just sees the chips + the collapsible About section.
