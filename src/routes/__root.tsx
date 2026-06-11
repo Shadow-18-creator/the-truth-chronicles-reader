@@ -91,6 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "dark fantasy webnovel, psychological trauma, geopolitical thriller, mythology meets cyberpunk, action novel, reader community interaction enabled" },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/bb880745-5c55-4687-a78e-0c8b838fc11f" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/bb880745-5c55-4687-a78e-0c8b838fc11f" },
+      { name: "google-site-verification", content: "GavuwTEKvbnnGe4TD91DRRWXCy-nGN1UvAsnsAVFCJQ" },
     ],
     links: [
       {
