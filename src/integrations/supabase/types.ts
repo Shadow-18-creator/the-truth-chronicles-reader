@@ -428,6 +428,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_chapter_rating_stat: {
+        Args: { _chapter_id: string }
+        Returns: {
+          avg_rating: number
+          rating_count: number
+        }[]
+      }
+      get_chapter_rating_stats: {
+        Args: never
+        Returns: {
+          avg_rating: number
+          chapter_id: string
+          rating_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

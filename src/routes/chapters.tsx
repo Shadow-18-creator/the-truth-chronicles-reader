@@ -48,16 +48,11 @@ function ChaptersPage() {
   const { data: ratings } = useQuery({
     queryKey: ["chapter-ratings", "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chapter_ratings")
-        .select("chapter_id, rating");
+      const { data, error } = await (supabase as any).rpc("get_chapter_rating_stats");
       if (error) throw error;
       const map = new Map<string, { sum: number; count: number }>();
-      for (const r of data ?? []) {
-        const cur = map.get(r.chapter_id) ?? { sum: 0, count: 0 };
-        cur.sum += r.rating;
-        cur.count += 1;
-        map.set(r.chapter_id, cur);
+      for (const r of (data ?? []) as Array<{ chapter_id: string; avg_rating: number; rating_count: number }>) {
+        map.set(r.chapter_id, { sum: Number(r.avg_rating) * Number(r.rating_count), count: Number(r.rating_count) });
       }
       return map;
     },
