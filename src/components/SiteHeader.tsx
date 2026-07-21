@@ -8,11 +8,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search, Pencil } from "lucide-react";
+import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search, Pencil, Eye } from "lucide-react";
 
 const navItems = [
   { to: "/chapters", label: "Chapters", icon: BookOpen },
   { to: "/chat", label: "Halls", icon: MessagesSquare },
+  { to: "/watcher", label: "Talk to Watcher", icon: Eye },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
   { to: "/users", label: "Seekers", icon: Search },
 ];

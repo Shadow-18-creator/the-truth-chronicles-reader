@@ -423,6 +423,42 @@ export type Database = {
         }
         Relationships: []
       }
+      watcher_config: {
+        Row: {
+          avatar_url: string | null
+          id: boolean
+          include_chapters: boolean
+          lore: string
+          name: string
+          system_prompt: string
+          tagline: string
+          updated_at: string
+          voice_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          id?: boolean
+          include_chapters?: boolean
+          lore?: string
+          name?: string
+          system_prompt?: string
+          tagline?: string
+          updated_at?: string
+          voice_id?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          id?: boolean
+          include_chapters?: boolean
+          lore?: string
+          name?: string
+          system_prompt?: string
+          tagline?: string
+          updated_at?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
