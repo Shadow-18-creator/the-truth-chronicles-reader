@@ -22,6 +22,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
+import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 
@@ -90,6 +91,11 @@ const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => ChaptersRoute,
 } as any)
+const AdminWatcherRoute = AdminWatcherRouteImport.update({
+  id: '/watcher',
+  path: '/watcher',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiWatcherTtsRoute = ApiWatcherTtsRouteImport.update({
   id: '/api/watcher/tts',
   path: '/api/watcher/tts',
@@ -103,7 +109,7 @@ const ApiWatcherChatRoute = ApiWatcherChatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/watcher': typeof WatcherRoute
+  '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -120,7 +127,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/watcher': typeof WatcherRoute
+  '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -138,7 +146,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/watcher': typeof WatcherRoute
+  '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/users'
     | '/watcher'
+    | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/users'
     | '/watcher'
+    | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/users'
     | '/watcher'
+    | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -209,7 +221,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   BookmarksRoute: typeof BookmarksRoute
   ChaptersRoute: typeof ChaptersRouteWithChildren
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChaptersSlugRouteImport
       parentRoute: typeof ChaptersRoute
     }
+    '/admin/watcher': {
+      id: '/admin/watcher'
+      path: '/watcher'
+      fullPath: '/admin/watcher'
+      preLoaderRoute: typeof AdminWatcherRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/watcher/tts': {
       id: '/api/watcher/tts'
       path: '/api/watcher/tts'
@@ -332,6 +351,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminRouteChildren {
+  AdminWatcherRoute: typeof AdminWatcherRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminWatcherRoute: AdminWatcherRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface ChaptersRouteChildren {
   ChaptersSlugRoute: typeof ChaptersSlugRoute
@@ -357,7 +386,7 @@ const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   BookmarksRoute: BookmarksRoute,
   ChaptersRoute: ChaptersRouteWithChildren,
@@ -373,3 +402,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

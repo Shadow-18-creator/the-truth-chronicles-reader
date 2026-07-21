@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ShieldCheck, Trash2 } from "lucide-react";
+import { ShieldCheck, Trash2, Eye } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -101,6 +102,20 @@ function AdminPage() {
         <h1 className="font-display text-5xl text-glow">Scriptorium</h1>
         <p className="text-muted-foreground italic font-body mt-2">Where chapters are scribed.</p>
       </header>
+
+      <Link
+        to="/admin/watcher"
+        className="flex items-center justify-between rounded-xl border border-primary/40 bg-gold-gradient/5 hover:bg-primary/10 p-5 mb-8 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Eye className="h-6 w-6 text-primary" />
+          <div>
+            <p className="font-display text-lg">Train the Watcher</p>
+            <p className="text-xs text-muted-foreground font-body italic">Feed it lore, pick a voice, change its avatar.</p>
+          </div>
+        </div>
+        <span className="text-primary text-sm">→</span>
+      </Link>
 
       <form onSubmit={create} className="rounded-xl border border-border/40 bg-card/60 p-6 mb-12 space-y-4">
         <h2 className="font-display text-2xl">New chapter</h2>
