@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
+import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -82,6 +83,11 @@ const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => ChaptersRoute,
 } as any)
+const ApiWatcherChatRoute = ApiWatcherChatRouteImport.update({
+  id: '/api/watcher/chat',
+  path: '/api/watcher/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/api/watcher/chat': typeof ApiWatcherChatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/api/watcher/chat': typeof ApiWatcherChatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/api/watcher/chat': typeof ApiWatcherChatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/api/watcher/chat'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/api/watcher/chat'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/api/watcher/chat'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UsersRoute: typeof UsersRoute
   UUsernameRoute: typeof UUsernameRoute
+  ApiWatcherChatRoute: typeof ApiWatcherChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChaptersSlugRouteImport
       parentRoute: typeof ChaptersRoute
     }
+    '/api/watcher/chat': {
+      id: '/api/watcher/chat'
+      path: '/api/watcher/chat'
+      fullPath: '/api/watcher/chat'
+      preLoaderRoute: typeof ApiWatcherChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -306,17 +326,8 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UsersRoute: UsersRoute,
   UUsernameRoute: UUsernameRoute,
+  ApiWatcherChatRoute: ApiWatcherChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
