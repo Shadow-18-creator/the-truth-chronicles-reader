@@ -119,8 +119,19 @@ function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB."); return; }
+    const ALLOWED = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+    const ALLOWED_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" };
+    if (!ALLOWED.includes(file.type as any)) {
+      toast.error("Only JPG, PNG, GIF, or WebP images are allowed.");
+      return;
+    }
+    const nameExt = file.name.split(".").pop()?.toLowerCase() || "";
+    if (nameExt === "svg" || file.type === "image/svg+xml") {
+      toast.error("SVG images are not allowed.");
+      return;
+    }
     setUploading(true);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const ext = ALLOWED_EXT[file.type];
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
     if (upErr) { setUploading(false); toast.error(upErr.message); return; }
