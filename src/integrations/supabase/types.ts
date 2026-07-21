@@ -425,7 +425,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      chapter_ratings_public: {
+        Row: {
+          chapter_id: string | null
+          rating: number | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          rating?: number | null
+        }
+        Update: {
+          chapter_id?: string | null
+          rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_ratings_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
