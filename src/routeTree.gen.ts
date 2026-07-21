@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WatcherRouteImport } from './routes/watcher'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -24,6 +25,11 @@ import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 
+const WatcherRoute = WatcherRouteImport.update({
+  id: '/watcher',
+  path: '/watcher',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
+  '/watcher': typeof WatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
+  '/watcher': typeof WatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
+  '/watcher': typeof WatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/sitemap.xml'
     | '/users'
+    | '/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/sitemap.xml'
     | '/users'
+    | '/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/sitemap.xml'
     | '/users'
+    | '/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UsersRoute: typeof UsersRoute
+  WatcherRoute: typeof WatcherRoute
   UUsernameRoute: typeof UUsernameRoute
   ApiWatcherChatRoute: typeof ApiWatcherChatRoute
   ApiWatcherTtsRoute: typeof ApiWatcherTtsRoute
@@ -212,6 +225,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/watcher': {
+      id: '/watcher'
+      path: '/watcher'
+      fullPath: '/watcher'
+      preLoaderRoute: typeof WatcherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -345,6 +365,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UsersRoute: UsersRoute,
+  WatcherRoute: WatcherRoute,
   UUsernameRoute: UUsernameRoute,
   ApiWatcherChatRoute: ApiWatcherChatRoute,
   ApiWatcherTtsRoute: ApiWatcherTtsRoute,
