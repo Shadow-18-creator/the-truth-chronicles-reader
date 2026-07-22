@@ -13,6 +13,7 @@ import { Route as WatcherRouteImport } from './routes/watcher'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ChaptersRouteImport } from './routes/chapters'
 import { Route as BookmarksRouteImport } from './routes/bookmarks'
@@ -23,8 +24,12 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
 const WatcherRoute = WatcherRouteImport.update({
   id: '/watcher',
@@ -44,6 +49,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -96,6 +106,18 @@ const AdminWatcherRoute = AdminWatcherRouteImport.update({
   path: '/watcher',
   getParentRoute: () => AdminRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiWatcherTtsRoute = ApiWatcherTtsRouteImport.update({
   id: '/api/watcher/tts',
   path: '/api/watcher/tts',
@@ -106,6 +128,17 @@ const ApiWatcherChatRoute = ApiWatcherChatRouteImport.update({
   path: '/api/watcher/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -114,14 +147,19 @@ export interface FileRoutesByFullPath {
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
+  '/mcp': typeof McpRoute
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/watcher': typeof WatcherRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -132,14 +170,19 @@ export interface FileRoutesByTo {
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
+  '/mcp': typeof McpRoute
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/watcher': typeof WatcherRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -151,14 +194,19 @@ export interface FileRoutesById {
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
+  '/mcp': typeof McpRoute
   '/profile': typeof ProfileRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/users': typeof UsersRoute
   '/watcher': typeof WatcherRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -171,14 +219,19 @@ export interface FileRouteTypes {
     | '/bookmarks'
     | '/chapters'
     | '/chat'
+    | '/mcp'
     | '/profile'
     | '/sitemap.xml'
     | '/users'
     | '/watcher'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   fileRoutesByTo: FileRoutesByTo
@@ -189,14 +242,19 @@ export interface FileRouteTypes {
     | '/bookmarks'
     | '/chapters'
     | '/chat'
+    | '/mcp'
     | '/profile'
     | '/sitemap.xml'
     | '/users'
     | '/watcher'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   id:
@@ -207,14 +265,19 @@ export interface FileRouteTypes {
     | '/bookmarks'
     | '/chapters'
     | '/chat'
+    | '/mcp'
     | '/profile'
     | '/sitemap.xml'
     | '/users'
     | '/watcher'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   fileRoutesById: FileRoutesById
@@ -226,11 +289,16 @@ export interface RootRouteChildren {
   BookmarksRoute: typeof BookmarksRoute
   ChaptersRoute: typeof ChaptersRouteWithChildren
   ChatRoute: typeof ChatRouteWithChildren
+  McpRoute: typeof McpRoute
   ProfileRoute: typeof ProfileRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UsersRoute: typeof UsersRoute
   WatcherRoute: typeof WatcherRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   UUsernameRoute: typeof UUsernameRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiWatcherChatRoute: typeof ApiWatcherChatRoute
   ApiWatcherTtsRoute: typeof ApiWatcherTtsRoute
 }
@@ -263,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -335,6 +410,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWatcherRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/watcher/tts': {
       id: '/api/watcher/tts'
       path: '/api/watcher/tts'
@@ -347,6 +436,20 @@ declare module '@tanstack/react-router' {
       path: '/api/watcher/chat'
       fullPath: '/api/watcher/chat'
       preLoaderRoute: typeof ApiWatcherChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -391,11 +494,17 @@ const rootRouteChildren: RootRouteChildren = {
   BookmarksRoute: BookmarksRoute,
   ChaptersRoute: ChaptersRouteWithChildren,
   ChatRoute: ChatRouteWithChildren,
+  McpRoute: McpRoute,
   ProfileRoute: ProfileRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UsersRoute: UsersRoute,
   WatcherRoute: WatcherRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   UUsernameRoute: UUsernameRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiWatcherChatRoute: ApiWatcherChatRoute,
   ApiWatcherTtsRoute: ApiWatcherTtsRoute,
 }
