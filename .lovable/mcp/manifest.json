@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://ucqlyleprcdctnlggihc.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "boy-who-saw-the-truth-mcp",
+      "version": "0.1.0",
+      "title": "The Boy Who Saw The Truth"
+    },
+    "tools": [
+      {
+        "name": "list_chapters",
+        "title": "List chapters",
+        "description": "List published chapters of 'The Boy Who Saw The Truth' with number, title, slug and summary.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Max chapters to return (default 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_chapter",
+        "title": "Get chapter",
+        "description": "Get the full content of a published chapter by slug or number.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "slug": {
+              "description": "Chapter slug",
+              "type": "string"
+            },
+            "number": {
+              "description": "Chapter number",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_bookmarks",
+        "title": "List my bookmarked chapters",
+        "description": "Return chapters the signed-in reader has bookmarked.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "bookmark_chapter",
+        "title": "Bookmark a chapter",
+        "description": "Bookmark a chapter for the signed-in reader by chapter slug or number.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string"
+            },
+            "number": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "post_comment",
+        "title": "Post a comment on a chapter",
+        "description": "Post a comment on a chapter as the signed-in reader. Body must be 1-2000 characters.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string"
+            },
+            "number": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "body"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "whoami",
+        "title": "Who am I",
+        "description": "Return the signed-in reader's profile (username, display name).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
