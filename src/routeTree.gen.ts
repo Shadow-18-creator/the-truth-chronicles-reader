@@ -29,6 +29,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
 const WatcherRoute = WatcherRouteImport.update({
   id: '/watcher',
@@ -133,6 +134,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
@@ -285,6 +297,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   UUsernameRoute: typeof UUsernameRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiWatcherChatRoute: typeof ApiWatcherChatRoute
   ApiWatcherTtsRoute: typeof ApiWatcherTtsRoute
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -483,6 +503,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   UUsernameRoute: UUsernameRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiWatcherChatRoute: ApiWatcherChatRoute,
   ApiWatcherTtsRoute: ApiWatcherTtsRoute,
