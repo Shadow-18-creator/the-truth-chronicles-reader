@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { Moon } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Enter — The Boy Who Saw The Truth" },
@@ -20,6 +23,12 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+  const goNext = () => {
+    if (safeNext) window.location.href = safeNext;
+    else navigate({ to: "/" });
+  };
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,17 +38,18 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     if (mode === "signup") {
+      const emailRedirectTo = safeNext ? `${window.location.origin}${safeNext}` : window.location.origin;
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo },
       });
       if (error) toast.error(error.message);
-      else { toast.success("Welcome to The Boy Who Saw The Truth."); navigate({ to: "/" }); }
+      else { toast.success("Welcome to The Boy Who Saw The Truth."); goNext(); }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) toast.error(error.message);
-      else { toast.success("Welcome back."); navigate({ to: "/" }); }
+      else { toast.success("Welcome back."); goNext(); }
     }
     setLoading(false);
   };
