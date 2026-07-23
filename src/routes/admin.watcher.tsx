@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Eye, Upload, ArrowLeft } from "lucide-react";
+import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
   head: () => ({ meta: [{ title: "Train the Watcher — Scriptorium" }, { name: "robots", content: "noindex" }] }),
@@ -56,6 +56,8 @@ function AdminWatcher() {
   const [includeChapters, setIncludeChapters] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingTraining, setUploadingTraining] = useState(false);
+  const trainingImages: string[] = (cfg?.training_images as string[] | null) ?? [];
 
   useEffect(() => {
     if (!cfg) return;
@@ -94,6 +96,29 @@ function AdminWatcher() {
     else { toast.success("New face given to the Watcher."); refetch(); }
   };
 
+  const uploadTrainingImage = async (file: File) => {
+    if (!ALLOWED.has(file.type)) { toast.error("Use JPG, PNG, or WebP."); return; }
+    if (file.size > 4 * 1024 * 1024) { toast.error("Max 4 MB."); return; }
+    setUploadingTraining(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `watcher/training-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: false, contentType: file.type });
+    if (upErr) { toast.error(upErr.message); setUploadingTraining(false); return; }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const next = [...trainingImages, pub.publicUrl];
+    const { error } = await supabase.from("watcher_config").update({ training_images: next }).eq("id", true);
+    setUploadingTraining(false);
+    if (error) toast.error(error.message);
+    else { toast.success("Image added to the Watcher's memory."); refetch(); }
+  };
+
+  const removeTrainingImage = async (url: string) => {
+    const next = trainingImages.filter((u) => u !== url);
+    const { error } = await supabase.from("watcher_config").update({ training_images: next }).eq("id", true);
+    if (error) toast.error(error.message);
+    else refetch();
+  };
+
   if (loading || !user) return <div className="p-16 text-center text-muted-foreground">…</div>;
   if (!isAdmin) return <div className="p-16 text-center text-muted-foreground">Only the author may train the Watcher.</div>;
 
@@ -107,6 +132,10 @@ function AdminWatcher() {
         <Eye className="h-8 w-8 text-primary mx-auto mb-3" />
         <h1 className="font-display text-5xl text-glow">Train the Watcher</h1>
         <p className="text-muted-foreground italic font-body mt-2">Teach it what it may reveal.</p>
+        <p className="text-xs text-muted-foreground mt-3 font-sans">
+          <Sparkles className="h-3 w-3 inline mr-1 text-primary" />
+          Powered by <span className="text-primary">Google Gemini</span> (Lovable AI) · Voice by <span className="text-primary">ElevenLabs</span>
+        </p>
       </header>
 
       <section className="rounded-xl border border-border/40 bg-card/60 p-6 mb-8 flex items-center gap-6">
@@ -119,6 +148,7 @@ function AdminWatcher() {
         )}
         <div className="flex-1">
           <p className="font-display text-lg">{cfg?.name}</p>
+          <p className="text-xs text-muted-foreground mb-1">Watcher's avatar (shown to readers)</p>
           <label className="inline-flex items-center gap-2 mt-2 text-sm cursor-pointer text-primary hover:underline">
             <Upload className="h-4 w-4" />
             {uploading ? "Uploading…" : "Change avatar"}
@@ -130,6 +160,44 @@ function AdminWatcher() {
             />
           </label>
         </div>
+      </section>
+
+      <section className="rounded-xl border border-border/40 bg-card/60 p-6 mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="font-display text-xl">Training images</h2>
+            <p className="text-xs text-muted-foreground italic font-body">Character portraits, maps, sigils, scenes — the Watcher will study these.</p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm cursor-pointer px-3 py-2 rounded-md bg-gold-gradient text-gold-foreground">
+            <ImagePlus className="h-4 w-4" />
+            {uploadingTraining ? "Uploading…" : "Add image"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadTrainingImage(f); e.currentTarget.value = ""; }}
+            />
+          </label>
+        </div>
+        {trainingImages.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6 italic">No images yet. Add character portraits or scenes so the Watcher can recognize them.</p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            {trainingImages.map((url) => (
+              <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-border/40">
+                <img src={url} alt="Training reference" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeTrainingImage(url)}
+                  aria-label="Remove training image"
+                  className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <form onSubmit={save} className="rounded-xl border border-border/40 bg-card/60 p-6 space-y-5">
