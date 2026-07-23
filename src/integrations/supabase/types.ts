@@ -432,6 +432,7 @@ export type Database = {
           name: string
           system_prompt: string
           tagline: string
+          training_images: string[]
           updated_at: string
           voice_id: string
         }
@@ -443,6 +444,7 @@ export type Database = {
           name?: string
           system_prompt?: string
           tagline?: string
+          training_images?: string[]
           updated_at?: string
           voice_id?: string
         }
@@ -454,6 +456,7 @@ export type Database = {
           name?: string
           system_prompt?: string
           tagline?: string
+          training_images?: string[]
           updated_at?: string
           voice_id?: string
         }

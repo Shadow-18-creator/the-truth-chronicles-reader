@@ -1,0 +1,1 @@
+ALTER TABLE public.watcher_config ADD COLUMN IF NOT EXISTS training_images text[] NOT NULL DEFAULT '{}';
