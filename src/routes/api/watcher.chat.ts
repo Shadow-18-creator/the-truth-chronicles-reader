@@ -27,6 +27,7 @@ export const Route = createFileRoute("/api/watcher/chat")({
           const name = cfg?.name ?? "Watcher";
           const basePrompt = cfg?.system_prompt ?? "You are the Watcher.";
           const lore = cfg?.lore ?? "";
+          const trainingImages: string[] = (cfg?.training_images as string[] | null) ?? [];
 
           let chapterCorpus = "";
           if (cfg?.include_chapters !== false) {
@@ -45,9 +46,17 @@ export const Route = createFileRoute("/api/watcher/chat")({
             `Your name is ${name}. Never break character.`,
             lore ? `# Additional Lore\n${lore}` : "",
             chapterCorpus ? `# Story Chapters (canonical source of truth)\n${chapterCorpus}` : "",
+            trainingImages.length ? `# Visual references\nYou have been shown ${trainingImages.length} training image(s) depicting canonical characters, places, or symbols from the story. Treat what you see in those images as truth.` : "",
           ]
             .filter(Boolean)
             .join("\n\n");
+
+          const systemContent = trainingImages.length
+            ? [
+                { type: "text", text: system },
+                ...trainingImages.slice(0, 8).map((url) => ({ type: "image_url", image_url: { url } })),
+              ]
+            : system;
 
           const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -57,7 +66,7 @@ export const Route = createFileRoute("/api/watcher/chat")({
             },
             body: JSON.stringify({
               model: "google/gemini-3-flash-preview",
-              messages: [{ role: "system", content: system }, ...messages.slice(-20)],
+              messages: [{ role: "system", content: systemContent }, ...messages.slice(-20)],
             }),
           });
 
