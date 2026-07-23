@@ -52,6 +52,7 @@ export function SiteHeader() {
             );
           })}
           {isAdmin && (
+            <>
             <Link
               to="/admin"
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-sans transition-colors ${
@@ -63,6 +64,18 @@ export function SiteHeader() {
               <ShieldCheck className="h-4 w-4" />
               Scriptorium
             </Link>
+            <Link
+              to="/admin/watcher"
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-sans transition-colors ${
+                pathname === "/admin/watcher"
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              }`}
+            >
+              <Eye className="h-4 w-4" />
+              Train Watcher
+            </Link>
+            </>
           )}
         </nav>
 
@@ -91,6 +104,23 @@ export function SiteHeader() {
                       Change Username
                     </Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="cursor-pointer">
+                          <ShieldCheck className="h-4 w-4" />
+                          Scriptorium
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/watcher" className="cursor-pointer">
+                          <Eye className="h-4 w-4" />
+                          Train Watcher
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={signOut}
