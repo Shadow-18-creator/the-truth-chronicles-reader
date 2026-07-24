@@ -1,17 +1,27 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles } from "lucide-react";
+import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
-  head: () => ({ meta: [{ title: "Train the Watcher — Scriptorium" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [
+      { title: "Train the Watcher — Scriptorium" },
+      { name: "description", content: "Author-only page for updating the Watcher's lore, image training references, avatar, and ElevenLabs voice." },
+      { property: "og:title", content: "Train the Watcher — Scriptorium" },
+      { property: "og:description", content: "Update the Watcher's stored text lore, image references, avatar, and voice." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: AdminWatcher,
 });
 
@@ -34,9 +44,10 @@ const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 function AdminWatcher() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
+    if (!loading && !user) navigate({ to: "/auth", search: { next: "/admin/watcher" } });
   }, [loading, user, navigate]);
 
   const { data: cfg, refetch } = useQuery({
@@ -74,11 +85,23 @@ function AdminWatcher() {
     setSaving(true);
     const { error } = await supabase
       .from("watcher_config")
-      .update({ name, tagline, voice_id: voiceId, system_prompt: systemPrompt, lore, include_chapters: includeChapters })
+      .update({
+        name: name.trim() || "Watcher",
+        tagline: tagline.trim(),
+        voice_id: voiceId.trim(),
+        system_prompt: systemPrompt.trim() || "You are the Watcher.",
+        lore: lore.trim(),
+        include_chapters: includeChapters,
+        training_images: trainingImages,
+      })
       .eq("id", true);
     setSaving(false);
     if (error) toast.error(error.message);
-    else { toast.success("The Watcher remembers."); refetch(); }
+    else {
+      toast.success("Watcher training data saved.");
+      refetch();
+      qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
+    }
   };
 
   const uploadAvatar = async (file: File) => {
@@ -93,7 +116,11 @@ function AdminWatcher() {
     const { error } = await supabase.from("watcher_config").update({ avatar_url: pub.publicUrl }).eq("id", true);
     setUploading(false);
     if (error) toast.error(error.message);
-    else { toast.success("New face given to the Watcher."); refetch(); }
+    else {
+      toast.success("New avatar saved for the Watcher.");
+      refetch();
+      qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
+    }
   };
 
   const uploadTrainingImage = async (file: File) => {
@@ -109,18 +136,43 @@ function AdminWatcher() {
     const { error } = await supabase.from("watcher_config").update({ training_images: next }).eq("id", true);
     setUploadingTraining(false);
     if (error) toast.error(error.message);
-    else { toast.success("Image added to the Watcher's memory."); refetch(); }
+    else {
+      toast.success("Training image stored for the Watcher.");
+      refetch();
+      qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
+    }
   };
 
   const removeTrainingImage = async (url: string) => {
     const next = trainingImages.filter((u) => u !== url);
     const { error } = await supabase.from("watcher_config").update({ training_images: next }).eq("id", true);
     if (error) toast.error(error.message);
-    else refetch();
+    else {
+      refetch();
+      qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
+    }
   };
 
   if (loading || !user) return <div className="p-16 text-center text-muted-foreground">…</div>;
-  if (!isAdmin) return <div className="p-16 text-center text-muted-foreground">Only the author may train the Watcher.</div>;
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-20 max-w-xl text-center">
+        <Eye className="h-10 w-10 text-primary mx-auto mb-4" />
+        <h1 className="font-display text-4xl text-glow mb-3">Train the Watcher</h1>
+        <p className="text-muted-foreground font-body italic mb-6">
+          This page opens only for the account that has claimed authorship. Sign in with that account, then use the direct link below.
+        </p>
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
+          <Button asChild className="bg-gold-gradient text-gold-foreground">
+            <Link to="/admin/watcher">Open direct link</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/profile">Check authorship</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
@@ -131,12 +183,30 @@ function AdminWatcher() {
       <header className="text-center mb-10">
         <Eye className="h-8 w-8 text-primary mx-auto mb-3" />
         <h1 className="font-display text-5xl text-glow">Train the Watcher</h1>
-        <p className="text-muted-foreground italic font-body mt-2">Teach it what it may reveal.</p>
+        <p className="text-muted-foreground italic font-body mt-2">Store and update the Watcher's text lore, image references, avatar, and voice.</p>
         <p className="text-xs text-muted-foreground mt-3 font-sans">
           <Sparkles className="h-3 w-3 inline mr-1 text-primary" />
-          Powered by <span className="text-primary">Google Gemini</span> (Lovable AI) · Voice by <span className="text-primary">ElevenLabs</span>
+          AI mind: <span className="text-primary">Google Gemini 3.6 Flash</span> through Lovable AI · Voice: <span className="text-primary">ElevenLabs</span>
         </p>
       </header>
+
+      <section className="grid md:grid-cols-3 gap-3 mb-8">
+        <div className="rounded-lg border border-border/40 bg-card/40 p-4">
+          <Database className="h-5 w-5 text-primary mb-2" />
+          <p className="font-display">Training data</p>
+          <p className="text-xs text-muted-foreground">Saved in the site backend and updated when you press Save.</p>
+        </div>
+        <div className="rounded-lg border border-border/40 bg-card/40 p-4">
+          <Volume2 className="h-5 w-5 text-primary mb-2" />
+          <p className="font-display">Voice option</p>
+          <p className="text-xs text-muted-foreground">Choose an ElevenLabs voice below or paste your own voice ID.</p>
+        </div>
+        <div className="rounded-lg border border-border/40 bg-card/40 p-4">
+          <LinkIcon className="h-5 w-5 text-primary mb-2" />
+          <p className="font-display">Direct page</p>
+          <Link to="/admin/watcher" className="text-xs text-primary underline">/admin/watcher</Link>
+        </div>
+      </section>
 
       <section className="rounded-xl border border-border/40 bg-card/60 p-6 mb-8 flex items-center gap-6">
         {cfg?.avatar_url ? (
@@ -148,10 +218,10 @@ function AdminWatcher() {
         )}
         <div className="flex-1">
           <p className="font-display text-lg">{cfg?.name}</p>
-          <p className="text-xs text-muted-foreground mb-1">Watcher's avatar (shown to readers)</p>
+          <p className="text-xs text-muted-foreground mb-1">Avatar option — shown to readers on Talk to Watcher</p>
           <label className="inline-flex items-center gap-2 mt-2 text-sm cursor-pointer text-primary hover:underline">
             <Upload className="h-4 w-4" />
-            {uploading ? "Uploading…" : "Change avatar"}
+            {uploading ? "Uploading…" : "Upload / change Watcher avatar"}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -166,7 +236,7 @@ function AdminWatcher() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="font-display text-xl">Training images</h2>
-            <p className="text-xs text-muted-foreground italic font-body">Character portraits, maps, sigils, scenes — the Watcher will study these.</p>
+            <p className="text-xs text-muted-foreground italic font-body">Stored image references: character portraits, maps, sigils, scenes.</p>
           </div>
           <label className="inline-flex items-center gap-2 text-sm cursor-pointer px-3 py-2 rounded-md bg-gold-gradient text-gold-foreground">
             <ImagePlus className="h-4 w-4" />
@@ -201,13 +271,24 @@ function AdminWatcher() {
       </section>
 
       <form onSubmit={save} className="rounded-xl border border-border/40 bg-card/60 p-6 space-y-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl">Text training data</h2>
+            <p className="text-xs text-muted-foreground">Last stored update: {cfg?.updated_at ? new Date(cfg.updated_at).toLocaleString() : "not saved yet"}</p>
+          </div>
+          <Button type="submit" disabled={saving} className="bg-gold-gradient text-gold-foreground shrink-0">
+            <Save className="h-4 w-4" />
+            {saving ? "Saving…" : "Save / update"}
+          </Button>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">Name</Label>
             <Input required value={name} onChange={(e) => setName(e.target.value)} className="bg-input/40 mt-1" />
           </div>
           <div>
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Voice (ElevenLabs)</Label>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Voice selector (ElevenLabs)</Label>
             <select
               value={voiceId}
               onChange={(e) => setVoiceId(e.target.value)}
@@ -241,7 +322,7 @@ function AdminWatcher() {
 
         <div>
           <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-            Training lore — extra events, characters, secrets, timelines
+            Stored training lore — events, characters, secrets, timelines
           </Label>
           <Textarea
             value={lore}
@@ -250,7 +331,7 @@ function AdminWatcher() {
             placeholder="Everything you write here is fed to the Watcher as canonical truth. Paste character bios, world rules, unpublished spoilers you want it to know, etc."
             className="bg-input/40 mt-1 font-body"
           />
-          <p className="text-xs text-muted-foreground mt-1 italic">The Watcher will only answer from this material and your published chapters.</p>
+          <p className="text-xs text-muted-foreground mt-1 italic">This text is stored as the Watcher's training data and can be updated anytime.</p>
         </div>
 
         <label className="flex items-center gap-2 text-sm">
@@ -259,7 +340,8 @@ function AdminWatcher() {
         </label>
 
         <Button type="submit" disabled={saving} className="bg-gold-gradient text-gold-foreground">
-          {saving ? "Saving…" : "Save training"}
+          <Save className="h-4 w-4" />
+          {saving ? "Saving…" : "Save / update Watcher training data"}
         </Button>
       </form>
     </div>

@@ -104,6 +104,12 @@ export function SiteHeader() {
                       Change Username
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/watcher" className="cursor-pointer">
+                      <Eye className="h-4 w-4" />
+                      Train Watcher
+                    </Link>
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <>
                       <DropdownMenuSeparator />
@@ -111,12 +117,6 @@ export function SiteHeader() {
                         <Link to="/admin" className="cursor-pointer">
                           <ShieldCheck className="h-4 w-4" />
                           Scriptorium
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/watcher" className="cursor-pointer">
-                          <Eye className="h-4 w-4" />
-                          Train Watcher
                         </Link>
                       </DropdownMenuItem>
                     </>
