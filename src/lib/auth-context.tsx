@@ -25,41 +25,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    let mounted = true;
+
+    const applySession = async (s: Session | null) => {
+      if (!mounted) return;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        // defer to avoid deadlock
-        setTimeout(() => {
-          supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", s.user.id)
-            .eq("role", "admin")
-            .maybeSingle()
-            .then(({ data }) => setIsAdmin(!!data));
-        }, 0);
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", s.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (mounted) setIsAdmin(!!data);
       } else {
         setIsAdmin(false);
       }
+      if (mounted) setLoading(false);
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      void applySession(s);
     });
 
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-      if (data.session?.user) {
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.session.user.id)
-          .eq("role", "admin")
-          .maybeSingle()
-          .then(({ data: r }) => setIsAdmin(!!r));
-      }
+      void applySession(data.session);
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {

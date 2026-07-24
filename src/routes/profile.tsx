@@ -229,7 +229,14 @@ function ProfilePage() {
         <section className="rounded-lg border border-primary/40 bg-card/40 p-6 mt-6 text-center">
           <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-3" />
           <p className="font-sans text-xs uppercase tracking-[0.3em] text-primary">You bear the quill</p>
-          <Link to="/admin" className="font-display text-xl text-glow underline mt-2 inline-block">Enter the Scriptorium</Link>
+          <div className="mt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button asChild className="bg-gold-gradient text-gold-foreground">
+              <Link to="/admin/watcher">Train the Watcher</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/admin">Enter the Scriptorium</Link>
+            </Button>
+          </div>
         </section>
       )}
     </div>
