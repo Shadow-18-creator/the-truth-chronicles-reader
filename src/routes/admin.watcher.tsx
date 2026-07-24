@@ -11,7 +11,17 @@ import { toast } from "sonner";
 import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
-  head: () => ({ meta: [{ title: "Train the Watcher — Scriptorium" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [
+      { title: "Train the Watcher — Scriptorium" },
+      { name: "description", content: "Author-only page for updating the Watcher's lore, image training references, avatar, and ElevenLabs voice." },
+      { property: "og:title", content: "Train the Watcher — Scriptorium" },
+      { property: "og:description", content: "Update the Watcher's stored text lore, image references, avatar, and voice." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: AdminWatcher,
 });
 
