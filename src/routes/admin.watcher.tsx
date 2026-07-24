@@ -85,8 +85,7 @@ function AdminWatcher() {
     setSaving(true);
     const { error } = await supabase
       .from("watcher_config")
-      .upsert({
-        id: true,
+      .update({
         name: name.trim() || "Watcher",
         tagline: tagline.trim(),
         voice_id: voiceId.trim(),
@@ -94,7 +93,8 @@ function AdminWatcher() {
         lore: lore.trim(),
         include_chapters: includeChapters,
         training_images: trainingImages,
-      }, { onConflict: "id" });
+      })
+      .eq("id", true);
     setSaving(false);
     if (error) toast.error(error.message);
     else {
@@ -113,7 +113,7 @@ function AdminWatcher() {
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
     if (upErr) { toast.error(upErr.message); setUploading(false); return; }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error } = await supabase.from("watcher_config").upsert({ id: true, avatar_url: pub.publicUrl }, { onConflict: "id" });
+    const { error } = await supabase.from("watcher_config").update({ avatar_url: pub.publicUrl }).eq("id", true);
     setUploading(false);
     if (error) toast.error(error.message);
     else {
@@ -133,7 +133,7 @@ function AdminWatcher() {
     if (upErr) { toast.error(upErr.message); setUploadingTraining(false); return; }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const next = [...trainingImages, pub.publicUrl];
-    const { error } = await supabase.from("watcher_config").upsert({ id: true, training_images: next }, { onConflict: "id" });
+    const { error } = await supabase.from("watcher_config").update({ training_images: next }).eq("id", true);
     setUploadingTraining(false);
     if (error) toast.error(error.message);
     else {
@@ -145,7 +145,7 @@ function AdminWatcher() {
 
   const removeTrainingImage = async (url: string) => {
     const next = trainingImages.filter((u) => u !== url);
-    const { error } = await supabase.from("watcher_config").upsert({ id: true, training_images: next }, { onConflict: "id" });
+    const { error } = await supabase.from("watcher_config").update({ training_images: next }).eq("id", true);
     if (error) toast.error(error.message);
     else {
       refetch();
