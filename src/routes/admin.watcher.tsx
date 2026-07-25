@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon } from "lucide-react";
+import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon, History, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
   head: () => ({
@@ -59,6 +59,22 @@ function AdminWatcher() {
     },
   });
 
+  const { data: history, refetch: refetchHistory } = useQuery({
+    queryKey: ["watcher-history"],
+    enabled: !!user && isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("watcher_training_history")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+  });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [voiceId, setVoiceId] = useState("");
@@ -98,8 +114,65 @@ function AdminWatcher() {
     setSaving(false);
     if (error) toast.error(error.message);
     else {
+      if (note.trim()) {
+        const latest = await supabase
+          .from("watcher_training_history")
+          .select("id")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latest.data?.id) {
+          await supabase
+            .from("watcher_training_history")
+            .update({ note: note.trim() })
+            .eq("id", latest.data.id);
+        }
+      }
+      setNote("");
       toast.success("Watcher training data saved.");
       refetch();
+      refetchHistory();
+      qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
+    }
+  };
+
+  const restoreSnapshot = async (snap: NonNullable<typeof history>[number]) => {
+    if (!confirm(`Restore Watcher to the version from ${new Date(snap.created_at).toLocaleString()}? Current training data will be overwritten (a new history entry will be recorded).`)) return;
+    setRestoringId(snap.id);
+    const imgs = Array.isArray(snap.training_images) ? (snap.training_images as string[]) : [];
+    const { error } = await supabase
+      .from("watcher_config")
+      .update({
+        name: snap.name,
+        tagline: snap.tagline,
+        voice_id: snap.voice_id,
+        system_prompt: snap.system_prompt,
+        lore: snap.lore,
+        include_chapters: snap.include_chapters,
+        avatar_url: snap.avatar_url,
+        training_images: imgs,
+      })
+      .eq("id", true);
+    if (!error) {
+      const latest = await supabase
+        .from("watcher_training_history")
+        .select("id")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latest.data?.id) {
+        await supabase
+          .from("watcher_training_history")
+          .update({ note: `Restored from ${new Date(snap.created_at).toLocaleString()}` })
+          .eq("id", latest.data.id);
+      }
+    }
+    setRestoringId(null);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Watcher restored to selected version.");
+      refetch();
+      refetchHistory();
       qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
     }
   };
@@ -339,11 +412,104 @@ function AdminWatcher() {
           Also feed all published chapters to the Watcher
         </label>
 
+        <div>
+          <Label className="text-xs uppercase tracking-widest text-muted-foreground">Note for this save (optional)</Label>
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder='e.g. "Added Chapter 7 spoilers" — shown in history'
+            className="bg-input/40 mt-1"
+          />
+        </div>
+
         <Button type="submit" disabled={saving} className="bg-gold-gradient text-gold-foreground">
           <Save className="h-4 w-4" />
           {saving ? "Saving…" : "Save / update Watcher training data"}
         </Button>
       </form>
+
+      <section className="rounded-xl border border-border/40 bg-card/60 p-6 mt-8">
+        <div className="flex items-center gap-2 mb-1">
+          <History className="h-5 w-5 text-primary" />
+          <h2 className="font-display text-2xl">Training history</h2>
+        </div>
+        <p className="text-xs text-muted-foreground italic font-body mb-4">
+          Every save is recorded. Review past versions of the Watcher's lore, prompt, voice, and images — and restore any of them.
+        </p>
+        {!history || history.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6 italic">No history yet.</p>
+        ) : (
+          <ul className="space-y-3">
+            {history.map((h) => {
+              const imgs = Array.isArray(h.training_images) ? (h.training_images as string[]) : [];
+              const isOpen = expandedId === h.id;
+              const voiceName = VOICES.find((v) => v.id === h.voice_id)?.name ?? h.voice_id;
+              return (
+                <li key={h.id} className="rounded-lg border border-border/40 bg-background/30 p-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-display text-sm">
+                        {new Date(h.created_at).toLocaleString()}
+                        {h.note && <span className="ml-2 text-primary italic font-body">— {h.note}</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Voice: {voiceName} · {imgs.length} image{imgs.length === 1 ? "" : "s"} · {h.chapter_count} chapter{h.chapter_count === 1 ? "" : "s"} in scope · include chapters: {h.include_chapters ? "yes" : "no"}
+                      </p>
+                      {!isOpen && h.lore && (
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 font-body">{h.lore.slice(0, 240)}{h.lore.length > 240 ? "…" : ""}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setExpandedId(isOpen ? null : h.id)}>
+                        {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        {isOpen ? "Hide" : "View"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="bg-gold-gradient text-gold-foreground"
+                        disabled={restoringId === h.id}
+                        onClick={() => restoreSnapshot(h)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        {restoringId === h.id ? "Restoring…" : "Restore"}
+                      </Button>
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div className="mt-4 space-y-3 border-t border-border/40 pt-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Name / tagline</p>
+                        <p className="text-sm font-body">{h.name} — <span className="italic">{h.tagline}</span></p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">System prompt</p>
+                        <pre className="text-xs whitespace-pre-wrap font-body bg-input/30 rounded p-3">{h.system_prompt}</pre>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Lore</p>
+                        <pre className="text-xs whitespace-pre-wrap font-body bg-input/30 rounded p-3 max-h-64 overflow-auto">{h.lore || "(empty)"}</pre>
+                      </div>
+                      {imgs.length > 0 && (
+                        <div>
+                          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Training images</p>
+                          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                            {imgs.map((url) => (
+                              <div key={url} className="aspect-square rounded-md overflow-hidden border border-border/40">
+                                <img src={url} alt="Historical training reference" className="h-full w-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
