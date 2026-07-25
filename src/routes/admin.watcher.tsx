@@ -47,7 +47,7 @@ function AdminWatcher() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth", search: { next: "/admin/watcher" } });
+    // Don't auto-redirect — show a friendly gate so the user knows why the page is empty.
   }, [loading, user, navigate]);
 
   const { data: cfg, refetch } = useQuery({
@@ -88,12 +88,12 @@ function AdminWatcher() {
 
   useEffect(() => {
     if (!cfg) return;
-    setName(cfg.name);
-    setTagline(cfg.tagline);
-    setVoiceId(cfg.voice_id);
-    setSystemPrompt(cfg.system_prompt);
+    setName(cfg.name ?? "");
+    setTagline(cfg.tagline ?? "");
+    setVoiceId(cfg.voice_id ?? "");
+    setSystemPrompt(cfg.system_prompt ?? "");
     setLore(cfg.lore ?? "");
-    setIncludeChapters(cfg.include_chapters);
+    setIncludeChapters(cfg.include_chapters ?? true);
   }, [cfg]);
 
   const save = async (e: React.FormEvent) => {
@@ -226,21 +226,47 @@ function AdminWatcher() {
     }
   };
 
-  if (loading || !user) return <div className="p-16 text-center text-muted-foreground">…</div>;
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-20 max-w-xl text-center text-muted-foreground">
+        <Eye className="h-8 w-8 text-primary mx-auto mb-3 animate-pulse" />
+        <p className="font-body italic">Summoning the Watcher's training hall…</p>
+      </div>
+    );
+  }
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-20 max-w-xl text-center">
+        <Eye className="h-10 w-10 text-primary mx-auto mb-4" />
+        <h1 className="font-display text-4xl text-glow mb-3">Train the Watcher</h1>
+        <p className="text-muted-foreground font-body italic mb-6">
+          You must sign in with the author account to open the training hall.
+        </p>
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
+          <Button asChild className="bg-gold-gradient text-gold-foreground">
+            <Link to="/auth" search={{ next: "/admin/watcher" }}>Sign in</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Back to home</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
   if (!isAdmin) {
     return (
       <div className="container mx-auto px-4 py-20 max-w-xl text-center">
         <Eye className="h-10 w-10 text-primary mx-auto mb-4" />
         <h1 className="font-display text-4xl text-glow mb-3">Train the Watcher</h1>
         <p className="text-muted-foreground font-body italic mb-6">
-          This page opens only for the account that has claimed authorship. Sign in with that account, then use the direct link below.
+          This page opens only for the account that has claimed authorship. Claim it on your profile, then return here.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-3">
           <Button asChild className="bg-gold-gradient text-gold-foreground">
-            <Link to="/admin/watcher">Open direct link</Link>
+            <Link to="/profile">Claim authorship</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link to="/profile">Check authorship</Link>
+            <Link to="/">Back to home</Link>
           </Button>
         </div>
       </div>
