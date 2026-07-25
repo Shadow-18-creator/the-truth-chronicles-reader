@@ -462,6 +462,54 @@ export type Database = {
         }
         Relationships: []
       }
+      watcher_training_history: {
+        Row: {
+          avatar_url: string | null
+          chapter_count: number
+          created_at: string
+          created_by: string | null
+          id: string
+          include_chapters: boolean
+          lore: string
+          name: string
+          note: string | null
+          system_prompt: string
+          tagline: string
+          training_images: Json
+          voice_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          chapter_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          include_chapters?: boolean
+          lore?: string
+          name: string
+          note?: string | null
+          system_prompt?: string
+          tagline?: string
+          training_images?: Json
+          voice_id?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          chapter_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          include_chapters?: boolean
+          lore?: string
+          name?: string
+          note?: string | null
+          system_prompt?: string
+          tagline?: string
+          training_images?: Json
+          voice_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
