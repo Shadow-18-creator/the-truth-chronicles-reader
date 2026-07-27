@@ -24,6 +24,7 @@ import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
+import { Route as AdminTrainWatcherRouteImport } from './routes/admin.train-watcher'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
@@ -106,6 +107,11 @@ const AdminWatcherRoute = AdminWatcherRouteImport.update({
   path: '/watcher',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTrainWatcherRoute = AdminTrainWatcherRouteImport.update({
+  id: '/train-watcher',
+  path: '/train-watcher',
+  getParentRoute: () => AdminRoute,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/watcher': typeof WatcherRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/train-watcher': typeof AdminTrainWatcherRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/watcher': typeof WatcherRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/train-watcher': typeof AdminTrainWatcherRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/watcher': typeof WatcherRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/train-watcher': typeof AdminTrainWatcherRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/watcher'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/train-watcher'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/watcher'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/train-watcher'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/watcher'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/train-watcher'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -410,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWatcherRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/train-watcher': {
+      id: '/admin/train-watcher'
+      path: '/train-watcher'
+      fullPath: '/admin/train-watcher'
+      preLoaderRoute: typeof AdminTrainWatcherRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -456,10 +475,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminTrainWatcherRoute: typeof AdminTrainWatcherRoute
   AdminWatcherRoute: typeof AdminWatcherRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminTrainWatcherRoute: AdminTrainWatcherRoute,
   AdminWatcherRoute: AdminWatcherRoute,
 }
 
