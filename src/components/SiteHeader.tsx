@@ -65,9 +65,9 @@ export function SiteHeader() {
               Scriptorium
             </Link>
             <Link
-              to="/admin/watcher"
+              to="/admin/train-watcher"
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-sans transition-colors ${
-                pathname === "/admin/watcher"
+                pathname === "/admin/train-watcher"
                   ? "text-primary bg-primary/10"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               }`}
@@ -105,7 +105,7 @@ export function SiteHeader() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/watcher" className="cursor-pointer">
+                    <Link to="/admin/train-watcher" className="cursor-pointer">
                       <Eye className="h-4 w-4" />
                       Train Watcher
                     </Link>

@@ -104,7 +104,7 @@ function AdminPage() {
       </header>
 
       <Link
-        to="/admin/watcher"
+        to="/admin/train-watcher"
         className="flex items-center justify-between rounded-xl border border-primary/40 bg-gold-gradient/5 hover:bg-primary/10 p-5 mb-8 transition-colors"
       >
         <div className="flex items-center gap-3">

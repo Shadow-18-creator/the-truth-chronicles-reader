@@ -231,7 +231,7 @@ function ProfilePage() {
           <p className="font-sans text-xs uppercase tracking-[0.3em] text-primary">You bear the quill</p>
           <div className="mt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button asChild className="bg-gold-gradient text-gold-foreground">
-              <Link to="/admin/watcher">Train the Watcher</Link>
+              <Link to="/admin/train-watcher">Train the Watcher</Link>
             </Button>
             <Button asChild variant="outline">
               <Link to="/admin">Enter the Scriptorium</Link>
