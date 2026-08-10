@@ -29,6 +29,35 @@ export const Route = createFileRoute("/api/watcher/chat")({
           const lore = cfg?.lore ?? "";
           const trainingImages: string[] = (cfg?.training_images as string[] | null) ?? [];
 
+          // --- Retrieval from the Watcher's private knowledge library ---
+          let retrieved = "";
+          try {
+            const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+            if (lastUser.trim()) {
+              const embRes = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}` },
+                body: JSON.stringify({ model: "google/gemini-embedding-2", input: lastUser.slice(0, 4000) }),
+              });
+              if (embRes.ok) {
+                const embJson = await embRes.json();
+                const vector = embJson?.data?.[0]?.embedding;
+                if (Array.isArray(vector)) {
+                  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+                  const { data: matches } = await supabaseAdmin.rpc("match_watcher_chunks", {
+                    query_embedding: JSON.stringify(vector) as unknown as string,
+                    match_count: 8,
+                  });
+                  retrieved = (matches ?? [])
+                    .map((m: { title: string; content: string }) => `[${m.title}]\n${m.content}`)
+                    .join("\n\n");
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Watcher retrieval failed", err);
+          }
+
           let chapterCorpus = "";
           if (cfg?.include_chapters !== false) {
             const { data: chapters } = await supabase
@@ -45,6 +74,9 @@ export const Route = createFileRoute("/api/watcher/chat")({
             basePrompt,
             `Your name is ${name}. Never break character.`,
             lore ? `# Additional Lore\n${lore}` : "",
+            retrieved
+              ? `# Retrieved knowledge (most relevant passages from the author's training library — prefer these when answering)\n${retrieved}`
+              : "",
             chapterCorpus ? `# Story Chapters (canonical source of truth)\n${chapterCorpus}` : "",
             trainingImages.length ? `# Visual references\nYou have been shown ${trainingImages.length} training image(s) depicting canonical characters, places, or symbols from the story. Treat what you see in those images as truth.` : "",
           ]

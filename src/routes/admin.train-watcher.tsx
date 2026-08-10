@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
-  BookOpen,
+  ArrowLeft,
+  CheckCircle2,
+  Database,
   FileText,
   Globe,
   HelpCircle,
   Loader2,
   Plus,
+  RefreshCw,
   Sparkles,
   Trash2,
   Upload,
-  CheckCircle2,
-  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +24,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import {
+  addWatcherSource,
+  deleteWatcherSource,
+  listWatcherSources,
+  reindexWatcherSource,
+} from "@/lib/watcher-ingest.functions";
 
 export const Route = createFileRoute("/admin/train-watcher")({
   head: () => ({
@@ -33,21 +42,39 @@ export const Route = createFileRoute("/admin/train-watcher")({
   component: TrainWatcherPage,
 });
 
-type QAPair = { id: string; question: string; answer: string };
-
 function TrainWatcherPage() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
-  const [files, setFiles] = useState<File[]>([]);
+  const listFn = useServerFn(listWatcherSources);
+  const addFn = useServerFn(addWatcherSource);
+  const delFn = useServerFn(deleteWatcherSource);
+  const reindexFn = useServerFn(reindexWatcherSource);
+
+  const sourcesQuery = useQuery({
+    queryKey: ["watcher-sources"],
+    queryFn: () => listFn({}),
+    enabled: !!user && isAdmin,
+  });
+
+  const [docTitle, setDocTitle] = useState("");
   const [manualText, setManualText] = useState("");
+  const [urlTitle, setUrlTitle] = useState("");
   const [urlInput, setUrlInput] = useState("");
-  const [urls, setUrls] = useState<string[]>([]);
-  const [qaPairs, setQaPairs] = useState<QAPair[]>([
-    { id: crypto.randomUUID(), question: "", answer: "" },
-  ]);
-  const [isTraining, setIsTraining] = useState(false);
-  const [lastTrainedAt, setLastTrainedAt] = useState<Date | null>(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const addMutation = useMutation({
+    mutationFn: (input: { title: string; kind: "text" | "file" | "url" | "qa"; text?: string; url?: string }) =>
+      addFn({ data: input }),
+    onSuccess: (res) => {
+      toast.success(`Indexed into the Watcher's memory — ${res.chunks} passage${res.chunks === 1 ? "" : "s"}.`);
+      void qc.invalidateQueries({ queryKey: ["watcher-sources"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Training failed"),
+  });
 
   if (loading) {
     return (
@@ -81,70 +108,45 @@ function TrainWatcherPage() {
     );
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
-    const allowed = picked.filter((f) =>
-      /\.(pdf|txt|docx)$/i.test(f.name) ||
-      ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(f.type)
-    );
-    if (allowed.length !== picked.length) {
-      toast.error("Only PDF, TXT, or DOCX files are accepted.");
-    }
-    setFiles((prev) => [...prev, ...allowed]);
-  };
-
-  const removeFile = (idx: number) => setFiles((prev) => prev.filter((_, i) => i !== idx));
-
-  const addUrl = () => {
-    const v = urlInput.trim();
-    if (!v) return;
-    try {
-      const u = new URL(v);
-      if (!/^https?:$/.test(u.protocol)) throw new Error("bad protocol");
-      if (urls.includes(u.toString())) {
-        toast.error("URL already added.");
-        return;
+    e.target.value = "";
+    for (const f of picked) {
+      if (!/\.(txt|md|markdown|csv|json)$/i.test(f.name)) {
+        toast.error(`${f.name}: only plain-text files (.txt, .md, .csv, .json) can be read directly — paste PDF/DOCX text below.`);
+        continue;
       }
-      setUrls((prev) => [...prev, u.toString()]);
-      setUrlInput("");
-    } catch {
-      toast.error("Enter a valid http(s) URL.");
+      const text = await f.text();
+      await addMutation.mutateAsync({ title: f.name, kind: "file", text });
     }
   };
 
-  const removeUrl = (idx: number) => setUrls((prev) => prev.filter((_, i) => i !== idx));
-
-  const addQaPair = () =>
-    setQaPairs((prev) => [...prev, { id: crypto.randomUUID(), question: "", answer: "" }]);
-
-  const removeQaPair = (id: string) =>
-    setQaPairs((prev) => (prev.length === 1 ? prev : prev.filter((p) => p.id !== id)));
-
-  const updateQaPair = (id: string, field: "question" | "answer", value: string) =>
-    setQaPairs((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
-
-  const totalItems =
-    files.length +
-    (manualText.trim() ? 1 : 0) +
-    urls.length +
-    qaPairs.filter((q) => q.question.trim() && q.answer.trim()).length;
-
-  const startTraining = async () => {
-    if (totalItems === 0) {
-      toast.error("Add at least one piece of training material.");
-      return;
-    }
-    setIsTraining(true);
-    setLastTrainedAt(null);
-    try {
-      // Simulated training pipeline — replace with real ingestion when backend is ready.
-      await new Promise((r) => setTimeout(r, 1800));
-      setLastTrainedAt(new Date());
-      toast.success(`Training complete — processed ${totalItems} item${totalItems === 1 ? "" : "s"}.`);
-    } finally {
-      setIsTraining(false);
-    }
+  const submitText = () => {
+    if (!manualText.trim()) return toast.error("Paste some text first.");
+    addMutation.mutate(
+      { title: docTitle.trim() || "Pasted text", kind: "text", text: manualText },
+      { onSuccess: () => { setManualText(""); setDocTitle(""); } },
+    );
   };
+
+  const submitUrl = () => {
+    if (!urlInput.trim()) return toast.error("Enter a URL first.");
+    addMutation.mutate(
+      { title: urlTitle.trim() || urlInput.trim(), kind: "url", url: urlInput.trim() },
+      { onSuccess: () => { setUrlInput(""); setUrlTitle(""); } },
+    );
+  };
+
+  const submitQa = () => {
+    if (!question.trim() || !answer.trim()) return toast.error("Both question and answer are required.");
+    addMutation.mutate(
+      { title: `Q&A — ${question.trim().slice(0, 60)}`, kind: "qa", text: `Question: ${question}\nAnswer: ${answer}` },
+      { onSuccess: () => { setQuestion(""); setAnswer(""); } },
+    );
+  };
+
+  const sources = sourcesQuery.data ?? [];
+  const totalChunks = sources.reduce((n, s) => n + (s.chunk_count ?? 0), 0);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 space-y-8">
@@ -161,15 +163,19 @@ function TrainWatcherPage() {
             Train Watcher AI Assistant
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Feed the Watcher documents, live web sources, and curated Q&amp;A so it can answer readers with your voice.
+            Everything you add here is stored in the Watcher&rsquo;s private notebook, split into passages and indexed.
+            When a reader asks a question, the Watcher searches this notebook first and answers only from it.
           </p>
         </div>
-        {lastTrainedAt && (
+        <div className="flex flex-col items-end gap-2">
           <Badge variant="secondary" className="gap-1">
-            <CheckCircle2 className="h-3 w-3" />
-            Last trained {lastTrainedAt.toLocaleTimeString()}
+            <Database className="h-3 w-3" /> {sources.length} source{sources.length === 1 ? "" : "s"} · {totalChunks} passages
           </Badge>
-        )}
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm"><Link to="/admin/watcher">Voice &amp; avatar</Link></Button>
+            <Button asChild size="sm"><Link to="/watcher">Talk to Watcher</Link></Button>
+          </div>
+        </div>
       </div>
 
       {/* Text & Documents */}
@@ -178,7 +184,7 @@ function TrainWatcherPage() {
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" /> Text &amp; Documents
           </CardTitle>
-          <CardDescription>Upload PDF, TXT, or DOCX files, or paste raw text below.</CardDescription>
+          <CardDescription>Upload plain-text files, or paste chapters, lore and notes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div>
@@ -188,43 +194,20 @@ function TrainWatcherPage() {
             >
               <Upload className="h-6 w-6 text-muted-foreground" />
               <span className="text-sm font-medium">Click to upload files</span>
-              <span className="text-xs text-muted-foreground">PDF, TXT, DOCX · multiple allowed</span>
+              <span className="text-xs text-muted-foreground">.txt, .md, .csv, .json · multiple allowed</span>
             </Label>
             <input
               id="train-file"
               type="file"
               multiple
-              accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".txt,.md,.markdown,.csv,.json,text/plain"
               className="hidden"
               onChange={handleFileChange}
             />
-            {files.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {files.map((f, i) => (
-                  <li
-                    key={`${f.name}-${i}`}
-                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-                  >
-                    <span className="truncate flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                      {f.name}
-                      <span className="text-xs text-muted-foreground">({Math.ceil(f.size / 1024)} KB)</span>
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => removeFile(i)}
-                      aria-label={`Remove ${f.name}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
           <div className="space-y-2">
+            <Label htmlFor="doc-title">Title (optional)</Label>
+            <Input id="doc-title" placeholder="Chapter 4 notes" value={docTitle} onChange={(e) => setDocTitle(e.target.value)} />
             <Label htmlFor="manual-text">Paste text</Label>
             <Textarea
               id="manual-text"
@@ -233,6 +216,10 @@ function TrainWatcherPage() {
               onChange={(e) => setManualText(e.target.value)}
               className="min-h-40"
             />
+            <Button onClick={submitText} disabled={addMutation.isPending}>
+              {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Add to Watcher&rsquo;s memory
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -243,49 +230,22 @@ function TrainWatcherPage() {
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" /> Website URLs
           </CardTitle>
-          <CardDescription>Add pages the Watcher should crawl and learn from.</CardDescription>
+          <CardDescription>The page is fetched, stripped to text and indexed immediately.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
+          <Input placeholder="Label (optional)" value={urlTitle} onChange={(e) => setUrlTitle(e.target.value)} />
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               type="url"
               placeholder="https://example.com/lore"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addUrl();
-                }
-              }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitUrl(); } }}
             />
-            <Button type="button" onClick={addUrl} className="sm:w-auto">
-              <Plus className="h-4 w-4" /> Add URL
+            <Button type="button" onClick={submitUrl} disabled={addMutation.isPending} className="sm:w-auto">
+              <Plus className="h-4 w-4" /> Fetch &amp; index
             </Button>
           </div>
-          {urls.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No URLs added yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {urls.map((u, i) => (
-                <li
-                  key={u}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-                >
-                  <span className="truncate">{u}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => removeUrl(i)}
-                    aria-label={`Remove ${u}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
         </CardContent>
       </Card>
 
@@ -293,80 +253,106 @@ function TrainWatcherPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-primary" /> Q&amp;A Pairs
+            <HelpCircle className="h-5 w-5 text-primary" /> Q&amp;A Pair
           </CardTitle>
-          <CardDescription>Teach the Watcher exact answers to common questions.</CardDescription>
+          <CardDescription>Teach the Watcher an exact answer to a common question.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {qaPairs.map((pair, idx) => (
-            <div
-              key={pair.id}
-              className="rounded-lg border border-border p-4 space-y-3 bg-muted/20"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Pair #{idx + 1}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => removeQaPair(pair.id)}
-                  disabled={qaPairs.length === 1}
-                  aria-label="Remove pair"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`q-${pair.id}`}>Question</Label>
-                <Input
-                  id={`q-${pair.id}`}
-                  placeholder="Who is the Watcher?"
-                  value={pair.question}
-                  onChange={(e) => updateQaPair(pair.id, "question", e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`a-${pair.id}`}>Answer</Label>
-                <Textarea
-                  id={`a-${pair.id}`}
-                  placeholder="The Watcher is…"
-                  value={pair.answer}
-                  onChange={(e) => updateQaPair(pair.id, "answer", e.target.value)}
-                  className="min-h-24"
-                />
-              </div>
-            </div>
-          ))}
-          <Button type="button" variant="outline" onClick={addQaPair}>
-            <Plus className="h-4 w-4" /> Add another pair
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="qa-q">Question</Label>
+            <Input id="qa-q" placeholder="Who is the Watcher?" value={question} onChange={(e) => setQuestion(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="qa-a">Answer</Label>
+            <Textarea id="qa-a" placeholder="The Watcher is…" value={answer} onChange={(e) => setAnswer(e.target.value)} className="min-h-24" />
+          </div>
+          <Button onClick={submitQa} disabled={addMutation.isPending}>
+            <Plus className="h-4 w-4" /> Add pair
           </Button>
         </CardContent>
       </Card>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-border pt-6">
-        <p className="text-sm text-muted-foreground">
-          {totalItems === 0
-            ? "Add training material to enable the Watcher."
-            : `${totalItems} item${totalItems === 1 ? "" : "s"} ready to train.`}
-        </p>
-        <Button
-          size="lg"
-          onClick={startTraining}
-          disabled={isTraining || totalItems === 0}
-          className="min-w-48"
-        >
-          {isTraining ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Training…
-            </>
+      {/* Library */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-primary" /> Watcher&rsquo;s Notebook
+          </CardTitle>
+          <CardDescription>Everything currently indexed. Re-index after editing, or remove a source entirely.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {sourcesQuery.isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Reading the notebook…
+            </div>
+          ) : sources.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing indexed yet. Add text, a URL, or a Q&amp;A pair above.</p>
           ) : (
-            <>
-              <Sparkles className="h-4 w-4" /> Start Training
-            </>
+            <ul className="space-y-2">
+              {sources.map((s) => (
+                <li key={s.id} className="flex items-start justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium truncate">{s.title}</span>
+                      <Badge variant="outline" className="text-[10px] uppercase">{s.kind}</Badge>
+                      {s.status === "ready" ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-primary">
+                          <CheckCircle2 className="h-3 w-3" /> {s.chunk_count} passages
+                        </span>
+                      ) : (
+                        <span className="text-xs text-destructive">{s.status}</span>
+                      )}
+                    </div>
+                    {s.error_message && <p className="text-xs text-destructive">{s.error_message}</p>}
+                    {s.source_url && <p className="text-xs text-muted-foreground truncate">{s.source_url}</p>}
+                    <p className="text-xs text-muted-foreground line-clamp-2">{s.raw_text.slice(0, 180)}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={`Re-index ${s.title}`}
+                      disabled={busy === s.id}
+                      onClick={async () => {
+                        setBusy(s.id);
+                        try {
+                          const r = await reindexFn({ data: { id: s.id } });
+                          toast.success(`Re-indexed — ${r.chunks} passages.`);
+                          void qc.invalidateQueries({ queryKey: ["watcher-sources"] });
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Re-index failed");
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      {busy === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={`Delete ${s.title}`}
+                      onClick={async () => {
+                        try {
+                          await delFn({ data: { id: s.id } });
+                          toast.success("Removed from the Watcher's memory.");
+                          void qc.invalidateQueries({ queryKey: ["watcher-sources"] });
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Delete failed");
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </Button>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
