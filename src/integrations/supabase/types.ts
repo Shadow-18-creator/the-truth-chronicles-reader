@@ -423,6 +423,41 @@ export type Database = {
         }
         Relationships: []
       }
+      watcher_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          source_id: string
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          source_id: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watcher_chunks_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "watcher_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       watcher_config: {
         Row: {
           avatar_url: string | null
@@ -459,6 +494,48 @@ export type Database = {
           training_images?: string[]
           updated_at?: string
           voice_id?: string
+        }
+        Relationships: []
+      }
+      watcher_sources: {
+        Row: {
+          chunk_count: number
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          kind: string
+          raw_text: string
+          source_url: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          chunk_count?: number
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          kind?: string
+          raw_text?: string
+          source_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          chunk_count?: number
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          kind?: string
+          raw_text?: string
+          source_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -538,6 +615,14 @@ export type Database = {
         Returns: boolean
       }
       is_blocked: { Args: { _user_id: string }; Returns: boolean }
+      match_watcher_chunks: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          content: string
+          similarity: number
+          title: string
+        }[]
+      }
       my_chapter_rating: { Args: { _chapter_id: string }; Returns: number }
       user_chapters_rated_count: { Args: { _user_id: string }; Returns: number }
     }
