@@ -20,6 +20,7 @@ import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
@@ -86,6 +87,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
@@ -172,7 +179,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bookmarks': typeof BookmarksRoute
   '/chapters': typeof ChaptersRouteWithChildren
@@ -189,6 +195,7 @@ export interface FileRoutesByTo {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
@@ -214,6 +221,7 @@ export interface FileRoutesById {
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
@@ -240,6 +248,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
@@ -247,7 +256,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/auth'
     | '/bookmarks'
     | '/chapters'
@@ -264,6 +272,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/admin'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
+    | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/watcher/chat'
@@ -394,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -477,11 +494,13 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminTrainWatcherRoute: typeof AdminTrainWatcherRoute
   AdminWatcherRoute: typeof AdminWatcherRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminTrainWatcherRoute: AdminTrainWatcherRoute,
   AdminWatcherRoute: AdminWatcherRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
