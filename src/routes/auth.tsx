@@ -8,9 +8,8 @@ import { toast } from "sonner";
 import { Moon } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: { next?: unknown }) => ({
-    next: typeof s.next === "string" ? s.next : undefined,
-  }),
+  validateSearch: (s: { next?: unknown }): { next?: string } =>
+    typeof s.next === "string" ? { next: s.next } : {},
   head: () => ({
     meta: [
       { title: "Enter — The Boy Who Saw The Truth" },
