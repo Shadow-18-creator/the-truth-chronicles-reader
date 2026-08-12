@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Moon } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: { next?: unknown }) => ({
     next: typeof s.next === "string" ? s.next : undefined,
   }),
   head: () => ({
