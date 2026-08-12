@@ -22,6 +22,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -329,23 +340,52 @@ function TrainWatcherPage() {
                     >
                       {busy === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      aria-label={`Delete ${s.title}`}
-                      onClick={async () => {
-                        try {
-                          await delFn({ data: { id: s.id } });
-                          toast.success("Removed from the Watcher's memory.");
-                          void qc.invalidateQueries({ queryKey: ["watcher-sources"] });
-                        } catch (err) {
-                          toast.error(err instanceof Error ? err.message : "Delete failed");
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          aria-label={`Delete ${s.title}`}
+                          disabled={busy === s.id}
+                        >
+                          {busy === `del-${s.id}` ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Erase this source?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            &ldquo;{s.title}&rdquo; and its {s.chunk_count} indexed passage
+                            {s.chunk_count === 1 ? "" : "s"} will be removed from the Watcher&rsquo;s
+                            notebook. It will no longer be used to answer readers. This cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Keep it</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              setBusy(`del-${s.id}`);
+                              try {
+                                await delFn({ data: { id: s.id } });
+                                toast.success("Removed from the Watcher's memory.");
+                                void qc.invalidateQueries({ queryKey: ["watcher-sources"] });
+                              } catch (err) {
+                                toast.error(err instanceof Error ? err.message : "Delete failed");
+                              } finally {
+                                setBusy(null);
+                              }
+                            }}
+                          >
+                            Delete source
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </li>
               ))}
