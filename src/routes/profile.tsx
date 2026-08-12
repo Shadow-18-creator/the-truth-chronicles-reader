@@ -17,9 +17,8 @@ export const Route = createFileRoute("/profile")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    edit: search.edit === true || search.edit === "true",
-  }),
+  validateSearch: (search: { edit?: unknown }): { edit?: boolean } =>
+    search.edit === undefined ? {} : { edit: search.edit === true || search.edit === "true" },
   component: ProfilePage,
 });
 
