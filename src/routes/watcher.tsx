@@ -126,6 +126,22 @@ function WatcherPage() {
           )}
           <h1 className="font-display text-5xl text-glow">{name}</h1>
           {cfg?.tagline && <p className="text-muted-foreground italic font-body">{cfg.tagline}</p>}
+          <div className="flex flex-col items-center gap-1 mt-2">
+            <label htmlFor="watcher-voice" className="text-xs font-sans tracking-[0.2em] uppercase text-muted-foreground">
+              Choose the Watcher's voice
+            </label>
+            <Select value={activeVoice} onValueChange={chooseVoice}>
+              <SelectTrigger id="watcher-voice" className="w-[260px] bg-input/40 border-border/40 font-body">
+                <SelectValue placeholder="Default voice" />
+              </SelectTrigger>
+              <SelectContent>
+                {VOICES.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground/70 font-body">Saved on this device — only you hear this choice.</p>
+          </div>
         </div>
       </header>
 
