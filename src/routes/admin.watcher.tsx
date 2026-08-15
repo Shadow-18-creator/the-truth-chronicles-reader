@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { VOICES } from "@/lib/watcher-voices";
 import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon, History, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
@@ -24,20 +25,6 @@ export const Route = createFileRoute("/admin/watcher")({
   }),
   component: AdminWatcher,
 });
-
-const VOICES = [
-  { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel (deep, narrator)" },
-  { id: "JBFqnCBsd6RMkjVDRZzb", name: "George (warm baritone)" },
-  { id: "nPczCjzI2devNBz1zQrb", name: "Brian (mature, mystic)" },
-  { id: "N2lVS1w4EtoT3dr4eOWO", name: "Callum (intense)" },
-  { id: "iP95p4xoKVk53GoZ742B", name: "Chris (calm)" },
-  { id: "cjVigY5qzO86Huf0OWal", name: "Eric (steady)" },
-  { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam (young)" },
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah (soft female)" },
-  { id: "XrExE9yKIg1WjnnlVkGX", name: "Matilda (warm female)" },
-  { id: "Xb7hH8MSUJpSbSDYk0k2", name: "Alice (bright female)" },
-  { id: "FGY2WhTYpPnrIDTdsKH5", name: "Laura (young female)" },
-];
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 

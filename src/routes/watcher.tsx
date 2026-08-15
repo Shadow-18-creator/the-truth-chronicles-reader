@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, Send, Volume2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { VOICES, VOICE_PREF_KEY } from "@/lib/watcher-voices";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/watcher")({
   head: () => ({
@@ -36,10 +38,25 @@ function WatcherPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
+  const [voicePref, setVoicePref] = useState<string>("");
   const endRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(VOICE_PREF_KEY);
+    if (stored) setVoicePref(stored);
+  }, []);
+
+  const activeVoice = voicePref || cfg?.voice_id || "";
+
+  const chooseVoice = (id: string) => {
+    setVoicePref(id);
+    localStorage.setItem(VOICE_PREF_KEY, id);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; setSpeakingId(null); }
+    toast.success("Voice preference saved.");
+  };
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,14 +88,14 @@ function WatcherPage() {
   };
 
   const speak = async (idx: number, text: string) => {
-    if (!cfg?.voice_id) { toast.error("The Watcher has no voice yet."); return; }
+    if (!activeVoice) { toast.error("The Watcher has no voice yet."); return; }
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeakingId(idx);
     try {
       const res = await fetch("/api/watcher/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voiceId: cfg.voice_id }),
+        body: JSON.stringify({ text, voiceId: activeVoice }),
       });
       if (!res.ok) { toast.error("Voice failed."); return; }
       const blob = await res.blob();
@@ -109,6 +126,22 @@ function WatcherPage() {
           )}
           <h1 className="font-display text-5xl text-glow">{name}</h1>
           {cfg?.tagline && <p className="text-muted-foreground italic font-body">{cfg.tagline}</p>}
+          <div className="flex flex-col items-center gap-1 mt-2">
+            <label htmlFor="watcher-voice" className="text-xs font-sans tracking-[0.2em] uppercase text-muted-foreground">
+              Choose the Watcher's voice
+            </label>
+            <Select value={activeVoice} onValueChange={chooseVoice}>
+              <SelectTrigger id="watcher-voice" className="w-[260px] bg-input/40 border-border/40 font-body">
+                <SelectValue placeholder="Default voice" />
+              </SelectTrigger>
+              <SelectContent>
+                {VOICES.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground/70 font-body">Saved on this device — only you hear this choice.</p>
+          </div>
         </div>
       </header>
 
