@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { VOICES } from "@/lib/watcher-voices";
 import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon, History, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
