@@ -48,6 +48,14 @@ Millisecond-level throughput is not a useful measure here: the limit is time-per
 **6. Visible limits and graceful degradation**
 - Show "The Watcher is resting" instead of an error on rate limits, keep chat usable when the AI is down, and add a small status line so you can see load.
 
+**7. "Use my own keys" for the Watcher (new)**
+- Add a small "Use my own API keys" button in the Watcher page header, next to the voice picker. It opens a dialog with two optional fields: an AI key (Google Gemini or OpenAI) and an ElevenLabs key, plus Save / Clear and a "these never leave your device" note.
+- Keys are stored only in the browser's local storage on that device — never written to the database, never logged, never attached to the account. Clearing them removes them instantly.
+- When a user has their own keys, their chat and voice requests are processed with those keys instead of the site's shared credits. Everything else stays identical: same Watcher persona, same lore, same knowledge library, same retrieved passages, same voices. Only the processing and billing change.
+- Retrieval/embedding still runs on the site's side (that's your private knowledge, not the user's), so answers stay grounded in your novel regardless of whose key is used.
+- A small badge on the page shows "Using your key" so the reader knows which mode they're in, and clear errors if their key is invalid or out of quota — with automatic fallback to the site key only if you want it (default: show the error, don't silently spend your credits).
+- This is the single best free scaling lever: heavy users pay for their own AI and voice usage, so your shared quota lasts far longer.
+
 ## Tools used (all free / already included)
 
 - Edge hosting + auto-scaling: included with your project.
@@ -69,6 +77,7 @@ Millisecond-level throughput is not a useful measure here: the limit is time-per
 ## Technical notes
 
 - No schema changes required except new indexes (plus an optional `rate_limits` table for throttling).
+- BYO keys: the key is read from local storage in the browser and sent per-request over HTTPS to `/api/watcher/chat` and `/api/watcher/tts`, used once for that call, and discarded. No storage, no logging, no persistence server-side. Requests carrying a user key skip the shared rate limit but keep input validation.
 - Watcher chapter grounding moves from prompt-stuffing to the existing `match_watcher_chunks` vector search, so answers stay accurate while the prompt shrinks.
 - Embeddings are 3072-dimension vectors — roughly 12 KB per chunk. That's the main driver of database growth; chapter text itself is negligible.
 - All changes are backend/config level; the reading, chat and Watcher UI stay exactly as they look now.
