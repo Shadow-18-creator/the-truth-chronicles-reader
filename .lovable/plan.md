@@ -1,48 +1,74 @@
-## Goal
-Add a "Training History" panel on `/admin/watcher` so the author can review every past training save, inspect the exact lore/prompt/voice/images used, and restore (retrain) any snapshot with one click.
+# Scale & Capacity Plan
 
-## Approach
-Today `watcher_config` is a single mutable row — every Save overwrites the previous state and nothing is retained. We add an append-only snapshot table that captures a row on every save, then render a history timeline on the admin page with view + restore actions.
+## Where you stand today
 
-## Database (new migration)
+The site runs on edge servers (auto-scaling, no single machine to crash) with a managed Postgres database and realtime service behind it. Static pages and chapter reads scale very well. Three things will break first under load, and one of them is already expensive on every single request.
 
-New table `public.watcher_training_history`:
-- `id uuid pk`
-- `created_at timestamptz`
-- `created_by uuid` (author who saved)
-- `name`, `tagline`, `voice_id`, `system_prompt`, `lore` (text)
-- `include_chapters bool`
-- `avatar_url text`
-- `training_images jsonb` (snapshot of URLs at save time)
-- `chapter_count int` (how many published chapters were in scope at save time — for context)
-- `note text nullable` (optional label the author can type before saving, e.g. "added Chapter 7 spoilers")
+Verified in the code:
 
-Access rules:
-- GRANT to `authenticated` + `service_role` (no anon).
-- RLS: only admins (`has_role(auth.uid(),'admin')`) can SELECT / INSERT. No UPDATE / DELETE policy → history is immutable.
+1. **Watcher chat sends your whole novel to the AI on every message.** `src/routes/api/watcher.chat.ts` fetches every published chapter's full `content` and pastes it into the system prompt, on top of the 8 retrieved passages it already has. With 50 chapters that's a huge prompt per message — slow answers, high AI cost, and the first thing to fall over with concurrent users.
+2. **Chat rooms load 200 messages at once** (`src/routes/chat.$slug.tsx`) and open one realtime channel per open tab. Fine for dozens of readers, strained in the hundreds.
+3. **Chapter list loads every chapter plus every rating aggregate on one page** (`src/routes/chapters.tsx`) with no pagination.
 
-Trigger: `AFTER INSERT OR UPDATE ON public.watcher_config` → insert a snapshot row into `watcher_training_history` copying all current fields. This guarantees every save (from any path) is logged automatically, no client-side coordination needed.
+## Honest capacity numbers (current setup)
 
-Also seed one row from the current `watcher_config` so history isn't empty on first open.
+| Area | Comfortable now | Breaks around |
+|---|---|---|
+| Reading chapters / browsing | thousands of concurrent readers | limited mainly by database connections, not the app |
+| Live chat | ~100–200 concurrent connected users | ~500 realtime connections (free plan cap) |
+| Talk to Watcher | ~5–15 messages/second across all users | AI provider rate limits (429s) — you already surface these |
+| Database rows | free tier: 500 MB ≈ hundreds of thousands of messages/comments | vector embeddings are the space hog, not text |
+| Requests/second | edge functions handle hundreds/sec | slow endpoints (Watcher) hold connections open and cause queueing |
 
-## Frontend (`src/routes/admin.watcher.tsx`)
+Millisecond-level throughput is not a useful measure here: the limit is time-per-request, not raw request count. Fast paths respond in tens of milliseconds; the Watcher takes seconds because of the oversized prompt.
 
-1. Add optional "Note for this save" input above the Save button — sent as `note` by writing it to `watcher_config.last_note` (new nullable column) right before save so the trigger captures it. (Simpler alternative: pass note by inserting the history row directly from the client after a successful save; we'll go with the direct-insert approach so the trigger stays note-agnostic.)
+## Plan — free fixes, in priority order
 
-2. New "Training History" section below the form:
-   - `useQuery(['watcher-history'])` selecting from `watcher_training_history` ordered by `created_at desc`, limit 50.
-   - Each entry (collapsible card) shows: timestamp, optional note, voice name, chapter count, image thumbnails count, first ~200 chars of lore.
-   - Buttons per entry:
-     - **View** → expands to show full lore, full system prompt, and the training image thumbnails as they were.
-     - **Restore this version** → confirmation, then upserts `watcher_config` with the snapshot's fields (including `training_images`, `avatar_url`, `voice_id`). Trigger records the restore as a new history entry (with note "Restored from <timestamp>").
+**1. Fix the Watcher prompt (biggest win, zero cost)**
+- Stop injecting the full chapter corpus. Rely on retrieval: raise `match_count` from 8 to ~12 and also index chapter text into the same knowledge store so retrieval covers it.
+- Cap total context sent per request and trim conversation history to the last 8 messages instead of 20.
+- Expected effect: 5–20x cheaper and faster answers, far higher concurrent capacity.
 
-3. Invalidate `watcher-config-admin`, `watcher-config-public`, and `watcher-history` after save/restore.
+**2. Add per-user rate limiting on Watcher and chat**
+- Simple in-memory + database-backed throttle (e.g. 10 Watcher messages/minute, 20 chat messages/minute per user), with a friendly in-character refusal message.
+- Prevents one user or a bot from exhausting AI credits for everyone.
 
-## Out of scope
-- Diffing between versions.
-- Pagination beyond 50 entries.
-- Deleting/pruning history (immutable by design).
+**3. Paginate and cache the heavy reads**
+- Chat: load the newest 50 messages, "load older" on scroll.
+- Chapters list: paginate at 20 and cache the rating aggregates.
+- Set sensible cache times in the data layer so repeat visits don't re-query.
+
+**4. Database indexes and cleanup**
+- Add indexes on `chat_messages(room_id, created_at)`, `comments(chapter_id)`, `chapter_ratings(chapter_id)`, `profiles(username)`.
+- Keeps queries fast as tables grow past 100k rows.
+
+**5. Cache chapter pages at the edge**
+- Published chapters are public and rarely change — serve them with short-lived edge caching so readers never touch the database.
+
+**6. Visible limits and graceful degradation**
+- Show "The Watcher is resting" instead of an error on rate limits, keep chat usable when the AI is down, and add a small status line so you can see load.
+
+## Tools used (all free / already included)
+
+- Edge hosting + auto-scaling: included with your project.
+- Managed Postgres, auth, storage, realtime: Lovable Cloud free tier (500 MB DB, 1 GB storage, ~500 realtime connections, 2 GB bandwidth).
+- AI chat + embeddings: Lovable AI gateway (free monthly allowance, then pay-as-you-go).
+- Caching and pagination: built into the existing data layer — no new dependency.
+
+## Paid upgrades for later expansion
+
+| When you need | Upgrade | Rough cost |
+|---|---|---|
+| More than 500 MB data or 500 chat connections | Cloud Pro tier (8 GB DB, 500k realtime messages) | ~$25/mo |
+| Heavy Watcher usage | AI credits top-up, or a cheaper model for short answers | usage-based |
+| Voice at scale | ElevenLabs paid tier (free tier is ~10k characters/month) | from ~$5/mo |
+| Global speed + DDoS protection | Cloudflare Pro / paid CDN caching | ~$20/mo |
+| Knowing about problems before users tell you | Sentry (error tracking) — has a usable free tier too | free–$26/mo |
+| Very large chat volume | Move chat history to a partitioned table or dedicated realtime service | usage-based |
 
 ## Technical notes
-- Restore only rewires `watcher_config` fields; it does not re-upload images to storage — snapshot URLs must still exist in the `avatars` bucket. Removing a training image from the current config does NOT delete the storage object today, so historical URLs stay valid.
-- Trigger uses `SECURITY DEFINER` + `SET search_path = public` per project conventions.
+
+- No schema changes required except new indexes (plus an optional `rate_limits` table for throttling).
+- Watcher chapter grounding moves from prompt-stuffing to the existing `match_watcher_chunks` vector search, so answers stay accurate while the prompt shrinks.
+- Embeddings are 3072-dimension vectors — roughly 12 KB per chunk. That's the main driver of database growth; chapter text itself is negligible.
+- All changes are backend/config level; the reading, chat and Watcher UI stay exactly as they look now.
