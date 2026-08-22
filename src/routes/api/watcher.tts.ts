@@ -1,14 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { checkRateLimit } from "@/lib/rate-limit.server";
+
+type Body = {
+  text?: string;
+  voiceId?: string;
+  elevenLabsKey?: string;
+};
+
+const RATE_LIMIT = { limit: 10, windowMinutes: 1 };
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() ?? "unknown";
+  return "unknown";
+}
 
 export const Route = createFileRoute("/api/watcher/tts")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
-          const { text, voiceId } = (await request.json()) as { text?: string; voiceId?: string };
+          const { text, voiceId, elevenLabsKey } = (await request.json()) as Body;
           if (!text || !voiceId) return new Response("text and voiceId required", { status: 400 });
 
-          const key = process.env.ELEVENLABS_API_KEY;
+          const ip = getClientIp(request);
+          const rate = await checkRateLimit(ip, "watcher_tts", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
+          if (!rate.allowed) {
+            return new Response("The Watcher's voice is tired — too many spoken words too quickly.", { status: 429 });
+          }
+
+          const key = elevenLabsKey || process.env.ELEVENLABS_API_KEY;
           if (!key) return new Response("ElevenLabs not connected", { status: 500 });
 
           const trimmed = text.slice(0, 2500);
@@ -29,6 +50,8 @@ export const Route = createFileRoute("/api/watcher/tts")({
           if (!res.ok) {
             const err = await res.text();
             console.error("ElevenLabs error", res.status, err);
+            if (res.status === 401) return new Response("Your ElevenLabs key was rejected — check it and try again.", { status: 402 });
+            if (res.status === 429) return new Response("ElevenLabs rate limit hit — slow down or switch keys.", { status: 429 });
             return new Response(err || "TTS failed", { status: res.status });
           }
 

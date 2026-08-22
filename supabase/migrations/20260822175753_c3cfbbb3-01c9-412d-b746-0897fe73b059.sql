@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS public.chapter_rating_stats;

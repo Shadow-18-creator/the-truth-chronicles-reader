@@ -4,10 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, Send, Volume2, Loader2 } from "lucide-react";
+import { Eye, Send, Volume2, Loader2, KeyRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { VOICES, VOICE_PREF_KEY } from "@/lib/watcher-voices";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/watcher")({
   head: () => ({
@@ -25,6 +28,10 @@ export const Route = createFileRoute("/watcher")({
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+const AI_KEY_KEY = "watcher-ai-key";
+const AI_PROVIDER_KEY = "watcher-ai-provider";
+const ELEVEN_KEY_KEY = "watcher-elevenlabs-key";
+
 function WatcherPage() {
   const { data: cfg } = useQuery({
     queryKey: ["watcher-config-public"],
@@ -39,23 +46,61 @@ function WatcherPage() {
   const [sending, setSending] = useState(false);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const [voicePref, setVoicePref] = useState<string>("");
+  const [aiKey, setAiKey] = useState<string>("");
+  const [aiProvider, setAiProvider] = useState<"openai" | "gemini">("openai");
+  const [elevenKey, setElevenKey] = useState<string>("");
+  const [keysOpen, setKeysOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(VOICE_PREF_KEY);
-    if (stored) setVoicePref(stored);
+    const storedVoice = localStorage.getItem(VOICE_PREF_KEY);
+    if (storedVoice) setVoicePref(storedVoice);
+    const storedAiKey = localStorage.getItem(AI_KEY_KEY);
+    if (storedAiKey) setAiKey(storedAiKey);
+    const storedProvider = localStorage.getItem(AI_PROVIDER_KEY) as "openai" | "gemini" | null;
+    if (storedProvider) setAiProvider(storedProvider);
+    const storedEleven = localStorage.getItem(ELEVEN_KEY_KEY);
+    if (storedEleven) setElevenKey(storedEleven);
   }, []);
 
   const activeVoice = voicePref || cfg?.voice_id || "";
+  const usingOwnKey = Boolean(aiKey.trim());
 
   const chooseVoice = (id: string) => {
     setVoicePref(id);
     localStorage.setItem(VOICE_PREF_KEY, id);
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; setSpeakingId(null); }
     toast.success("Voice preference saved.");
+  };
+
+  const saveKeys = () => {
+    if (aiKey.trim()) {
+      localStorage.setItem(AI_KEY_KEY, aiKey.trim());
+      localStorage.setItem(AI_PROVIDER_KEY, aiProvider);
+    } else {
+      localStorage.removeItem(AI_KEY_KEY);
+      localStorage.removeItem(AI_PROVIDER_KEY);
+    }
+    if (elevenKey.trim()) {
+      localStorage.setItem(ELEVEN_KEY_KEY, elevenKey.trim());
+    } else {
+      localStorage.removeItem(ELEVEN_KEY_KEY);
+    }
+    setKeysOpen(false);
+    toast.success(usingOwnKey ? "Your keys saved — the Watcher will use them for your sessions." : "Site keys restored.");
+  };
+
+  const clearKeys = () => {
+    setAiKey("");
+    setElevenKey("");
+    localStorage.removeItem(AI_KEY_KEY);
+    localStorage.removeItem(AI_PROVIDER_KEY);
+    localStorage.removeItem(ELEVEN_KEY_KEY);
+    setKeysOpen(false);
+    toast.success("Your keys cleared — using the site's shared keys.");
   };
 
   const send = async (e: React.FormEvent) => {
@@ -70,7 +115,10 @@ function WatcherPage() {
       const res = await fetch("/api/watcher/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({
+          messages: next,
+          ...(usingOwnKey ? { aiKey: aiKey.trim(), aiProvider } : {}),
+        }),
       });
       if (!res.ok) {
         const err = await res.text();
@@ -95,9 +143,13 @@ function WatcherPage() {
       const res = await fetch("/api/watcher/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voiceId: activeVoice }),
+        body: JSON.stringify({
+          text,
+          voiceId: activeVoice,
+          ...(elevenKey.trim() ? { elevenLabsKey: elevenKey.trim() } : {}),
+        }),
       });
-      if (!res.ok) { toast.error("Voice failed."); return; }
+      if (!res.ok) { toast.error(await res.text() || "Voice failed."); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
@@ -141,6 +193,76 @@ function WatcherPage() {
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground/70 font-body">Saved on this device — only you hear this choice.</p>
+          </div>
+
+          <div className="flex items-center gap-3 mt-2">
+            <Dialog open={keysOpen} onOpenChange={setKeysOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-primary/40 text-primary font-sans">
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  Use my own keys
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="font-display">Use your own keys</DialogTitle>
+                  <DialogDescription className="font-body text-muted-foreground">
+                    Enter your own API keys to power the Watcher with your credits. Keys stay in this browser only — never on the server.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-key" className="font-sans text-xs uppercase tracking-widest">AI key</Label>
+                    <Select value={aiProvider} onValueChange={(v) => setAiProvider(v as "openai" | "gemini")}>
+                      <SelectTrigger id="ai-provider" className="bg-input/40 border-border/40 font-body">
+                        <SelectValue placeholder="Provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="openai">OpenAI</SelectItem>
+                        <SelectItem value="gemini">Google Gemini</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="ai-key"
+                      type="password"
+                      value={aiKey}
+                      onChange={(e) => setAiKey(e.target.value)}
+                      placeholder="sk-... or AIza..."
+                      className="bg-input/40 border-border/40 font-body"
+                    />
+                    <p className="text-[11px] text-muted-foreground/70 font-body">Leave blank to use the site's shared AI key.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="eleven-key" className="font-sans text-xs uppercase tracking-widest">ElevenLabs key</Label>
+                    <Input
+                      id="eleven-key"
+                      type="password"
+                      value={elevenKey}
+                      onChange={(e) => setElevenKey(e.target.value)}
+                      placeholder="ElevenLabs API key"
+                      className="bg-input/40 border-border/40 font-body"
+                    />
+                    <p className="text-[11px] text-muted-foreground/70 font-body">Leave blank to use the site's shared ElevenLabs key.</p>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={saveKeys} className="bg-gold-gradient text-gold-foreground font-sans">Save keys</Button>
+                    <Button onClick={clearKeys} variant="outline" className="border-border/40 font-sans">Clear</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            {usingOwnKey && (
+              <Badge variant="outline" className="border-primary/40 text-primary font-sans">
+                <KeyRound className="h-3 w-3 mr-1" />
+                Using your AI key
+              </Badge>
+            )}
+            {elevenKey.trim() && (
+              <Badge variant="outline" className="border-primary/40 text-primary font-sans">
+                <Volume2 className="h-3 w-3 mr-1" />
+                Using your voice key
+              </Badge>
+            )}
           </div>
         </div>
       </header>

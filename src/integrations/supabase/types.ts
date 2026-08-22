@@ -409,8 +409,8 @@ export type Database = {
           count: number
           created_at: string
           id: string
+          key: string
           updated_at: string
-          user_id: string
         }
         Insert: {
           action: string
@@ -418,8 +418,8 @@ export type Database = {
           count?: number
           created_at?: string
           id?: string
+          key: string
           updated_at?: string
-          user_id: string
         }
         Update: {
           action?: string
@@ -427,8 +427,8 @@ export type Database = {
           count?: number
           created_at?: string
           id?: string
+          key?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { BookOpen, Star } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getAllChapterRatings } from "@/lib/chapter.functions";
 
 export const Route = createFileRoute("/chapters")({
   head: () => ({
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/chapters")({
 });
 
 function ChaptersPage() {
+  const fetchRatings = useServerFn(getAllChapterRatings);
   const { data, isLoading } = useQuery({
     queryKey: ["chapters", "all"],
     queryFn: async () => {
@@ -48,11 +51,10 @@ function ChaptersPage() {
   const { data: ratings } = useQuery({
     queryKey: ["chapter-ratings", "all"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("get_chapter_rating_stats");
-      if (error) throw error;
+      const obj = await fetchRatings();
       const map = new Map<string, { sum: number; count: number }>();
-      for (const r of (data ?? []) as Array<{ chapter_id: string; avg_rating: number; rating_count: number }>) {
-        map.set(r.chapter_id, { sum: Number(r.avg_rating) * Number(r.rating_count), count: Number(r.rating_count) });
+      for (const [k, v] of Object.entries(obj)) {
+        map.set(k, v as { sum: number; count: number });
       }
       return map;
     },

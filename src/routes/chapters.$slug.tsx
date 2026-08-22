@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { getChapterRatingStats } from "@/lib/chapter.functions";
 
 export const Route = createFileRoute("/chapters/$slug")({
   loader: async ({ params }) => {
@@ -114,6 +116,7 @@ function ChapterPage() {
     },
   });
 
+  const fetchStats = useServerFn(getChapterRatingStats);
   const { data: myRating } = useQuery({
     queryKey: ["chapter-rating", chapter?.id, user?.id],
     enabled: !!chapter && !!user,
@@ -127,12 +130,7 @@ function ChapterPage() {
     queryKey: ["chapter-rating-stats", chapter?.id],
     enabled: !!chapter,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("get_chapter_rating_stat", { _chapter_id: chapter!.id });
-      if (error) throw error;
-      const row = (data ?? [])[0] as { avg_rating: number | null; rating_count: number | null } | undefined;
-      const count = Number(row?.rating_count ?? 0);
-      const avg = row?.avg_rating != null ? Number(row.avg_rating) : 0;
-      return { count, avg };
+      return fetchStats({ data: { chapterId: chapter!.id } });
     },
   });
 
