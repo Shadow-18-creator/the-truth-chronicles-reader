@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { getChapterRatingStats } from "@/lib/chapter.functions";
 
 export const Route = createFileRoute("/chapters/$slug")({
   loader: async ({ params }) => {
