@@ -619,22 +619,7 @@ export type Database = {
       }
     }
     Views: {
-      chapter_rating_stats: {
-        Row: {
-          avg_rating: number | null
-          chapter_id: string | null
-          rating_count: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chapter_ratings_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapters"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       get_chapter_rating_stat: {
