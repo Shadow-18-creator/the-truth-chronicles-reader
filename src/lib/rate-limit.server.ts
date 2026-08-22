@@ -24,7 +24,7 @@ export async function checkRateLimit(
   const { data: existing, error: fetchErr } = await supabaseAdmin
     .from("rate_limits")
     .select("id, count")
-    .eq("user_id", key)
+    .eq("key", key)
     .eq("action", action)
     .eq("bucket", bucket)
     .maybeSingle();
@@ -43,8 +43,8 @@ export async function checkRateLimit(
   const { error: upsertErr } = await supabaseAdmin
     .from("rate_limits")
     .upsert(
-      { user_id: key, action, bucket, count: next, updated_at: new Date().toISOString() },
-      { onConflict: "user_id, action, bucket" },
+      { key, action, bucket, count: next, updated_at: new Date().toISOString() },
+      { onConflict: "key, action, bucket" },
     );
 
   if (upsertErr) {
