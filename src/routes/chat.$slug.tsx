@@ -6,12 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Send, Heart, Trash2, Ban } from "lucide-react";
+import { Send, Heart, Trash2, Ban, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
+import { useServerFn } from "@tanstack/react-start";
+import { sendChatMessage, toggleMessageLike, deleteChatMessage, toggleUserBlock } from "@/lib/chat.functions";
 
 export const Route = createFileRoute("/chat/$slug")({
   component: ChatRoom,
 });
+
+const PAGE_SIZE = 50;
 
 function ChatRoom() {
   const { slug } = Route.useParams();
@@ -19,6 +23,11 @@ function ChatRoom() {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+
+  const sendMsg = useServerFn(sendChatMessage);
+  const toggleLikeFn = useServerFn(toggleMessageLike);
+  const deleteMsgFn = useServerFn(deleteChatMessage);
+  const toggleBlockFn = useServerFn(toggleUserBlock);
 
   const { data: room } = useQuery({
     queryKey: ["room", slug],
@@ -28,19 +37,24 @@ function ChatRoom() {
     },
   });
 
+  const [pageCount, setPageCount] = useState(1);
   const { data: messages } = useQuery({
-    queryKey: ["messages", room?.id],
+    queryKey: ["messages", room?.id, pageCount],
     enabled: !!room,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("chat_messages")
         .select("id, body, user_id, created_at, profiles:user_id(username, display_name, avatar_url)")
         .eq("room_id", room!.id)
-        .order("created_at", { ascending: true })
-        .limit(200);
-      return data ?? [];
+        .order("created_at", { ascending: false })
+        .limit(pageCount * PAGE_SIZE);
+      if (error) throw error;
+      return (data ?? []).reverse();
     },
   });
+
+  const totalLoaded = messages?.length ?? 0;
+  const hasMore = room ? totalLoaded >= pageCount * PAGE_SIZE : false;
 
   const { data: admins } = useQuery({
     queryKey: ["admin-ids"],
@@ -102,43 +116,43 @@ function ChatRoom() {
     if (!text.trim() || !room) return;
     const body = text.trim();
     setText("");
-    const { error } = await supabase.from("chat_messages").insert({ room_id: room.id, user_id: user.id, body });
-    if (error) toast.error(error.message);
+    try {
+      await sendMsg({ data: { roomId: room.id, body } });
+    } catch (err: any) {
+      toast.error(err?.message || "Could not send message.");
+    }
   };
 
   const toggleLike = async (m: any) => {
     if (!user) { toast.error("Sign in to give a like."); return; }
     if (m.user_id === user.id) { toast.error("You can't like your own message."); return; }
-    if (likedByMe.has(m.id)) {
-      await supabase.from("message_likes").delete().eq("message_id", m.id).eq("liker_id", user.id);
-    } else {
-      const { error } = await supabase.from("message_likes").insert({
-        message_id: m.id, liker_id: user.id, recipient_id: m.user_id,
-      });
-      if (error) toast.error(error.message);
+    try {
+      await toggleLikeFn({ data: { messageId: m.id, recipientId: m.user_id, liked: likedByMe.has(m.id) } });
+      qc.invalidateQueries({ queryKey: ["message-likes", room?.id] });
+    } catch (err: any) {
+      toast.error(err?.message || "Could not like message.");
     }
-    qc.invalidateQueries({ queryKey: ["message-likes", room?.id] });
   };
 
   const deleteMessage = async (id: string) => {
     if (!confirm("Delete this message?")) return;
-    const { error } = await supabase.from("chat_messages").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    try {
+      await deleteMsgFn({ data: { messageId: id } });
+      qc.invalidateQueries({ queryKey: ["messages", room?.id] });
+    } catch (err: any) {
+      toast.error(err?.message || "Could not delete message.");
+    }
   };
 
   const toggleBlock = async (targetUserId: string) => {
     if (!user || !isAdmin) return;
-    if (blockedSet?.has(targetUserId)) {
-      const { error } = await (supabase as any).from("blocked_users").delete().eq("user_id", targetUserId);
-      if (error) { toast.error(error.message); return; }
-      toast.success("User unblocked.");
-    } else {
-      if (!confirm("Block this user from posting?")) return;
-      const { error } = await (supabase as any).from("blocked_users").insert({ user_id: targetUserId, blocked_by: user.id });
-      if (error) { toast.error(error.message); return; }
-      toast.success("User blocked.");
+    if (!confirm(blockedSet?.has(targetUserId) ? "Unblock this user?" : "Block this user from posting?")) return;
+    try {
+      await toggleBlockFn({ data: { targetUserId, blocked: blockedSet?.has(targetUserId) ?? false } });
+      qc.invalidateQueries({ queryKey: ["blocked-users"] });
+    } catch (err: any) {
+      toast.error(err?.message || "Could not update block.");
     }
-    qc.invalidateQueries({ queryKey: ["blocked-users"] });
   };
 
   if (!room) return <div className="p-8 text-muted-foreground">Loading room…</div>;
@@ -151,6 +165,17 @@ function ChatRoom() {
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        {hasMore && (
+          <div className="flex justify-center">
+            <button
+              onClick={() => setPageCount((p) => p + 1)}
+              className="flex items-center gap-1 text-xs font-sans text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Load older messages"
+            >
+              <ChevronUp className="h-3.5 w-3.5" /> Load older messages
+            </button>
+          </div>
+        )}
         {messages?.map((m: any) => (
           (() => {
             const isAuthor = admins?.has(m.user_id);
