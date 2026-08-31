@@ -109,6 +109,62 @@ export type Database = {
           },
         ]
       }
+      chapter_translations: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          language_code: string
+          model: string
+          review_note: string | null
+          reviewed: boolean
+          source_content_hash: string
+          status: string
+          translated_paragraphs: Json
+          translated_summary: string | null
+          translated_title: string
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          language_code: string
+          model?: string
+          review_note?: string | null
+          reviewed?: boolean
+          source_content_hash: string
+          status?: string
+          translated_paragraphs?: Json
+          translated_summary?: string | null
+          translated_title: string
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          language_code?: string
+          model?: string
+          review_note?: string | null
+          reviewed?: boolean
+          source_content_hash?: string
+          status?: string
+          translated_paragraphs?: Json
+          translated_summary?: string | null
+          translated_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_translations_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           content: string
