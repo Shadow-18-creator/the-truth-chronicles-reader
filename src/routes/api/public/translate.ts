@@ -47,7 +47,11 @@ export const Route = createFileRoute("/api/public/translate")({
           );
           if (!rate.allowed) return jsonError("Translations are briefly rate limited. Try again in a moment.", 429);
 
-          const supabase = createClient<Database>(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
+          const supabaseUrl = process.env["SUPABASE_URL"];
+          const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+          const lovableApiKey = process.env["LOVABLE_API_KEY"];
+          if (!supabaseUrl || !publishableKey || !lovableApiKey) return jsonError("Translation service is not configured.", 503);
+          const supabase = createClient<Database>(supabaseUrl, publishableKey, {
             auth: { persistSession: false, autoRefreshToken: false },
           });
           const { data: chapter, error: chapterError } = await supabase
@@ -94,7 +98,7 @@ export const Route = createFileRoute("/api/public/translate")({
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Lovable-API-Key": process.env["LOVABLE_API_KEY"]!,
+              "Lovable-API-Key": lovableApiKey,
               "X-Lovable-AIG-SDK": "fetch",
             },
             body: JSON.stringify({
@@ -152,7 +156,8 @@ export const Route = createFileRoute("/api/public/translate")({
             return jsonError("The translation did not preserve the chapter structure. Please try again.", 502);
           }
 
-          const { error: saveError } = await supabase.from("chapter_translations").upsert(
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { error: saveError } = await supabaseAdmin.from("chapter_translations").upsert(
             {
               chapter_id: chapter.id,
               language_code: body.languageCode,

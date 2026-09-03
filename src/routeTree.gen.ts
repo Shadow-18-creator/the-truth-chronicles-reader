@@ -24,6 +24,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminTrainWatcherRouteImport } from './routes/admin.train-watcher'
+import { Route as AdminTranslationsRouteImport } from './routes/admin.translations'
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
@@ -111,6 +112,11 @@ const AdminTrainWatcherRoute = AdminTrainWatcherRouteImport.update({
   path: '/train-watcher',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTranslationsRoute = AdminTranslationsRouteImport.update({
+  id: '/translations',
+  path: '/translations',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminWatcherRoute = AdminWatcherRouteImport.update({
   id: '/watcher',
   path: '/watcher',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/train-watcher'
+    | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/train-watcher'
+    | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/train-watcher'
+    | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -445,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTrainWatcherRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/translations': {
+      id: '/admin/translations'
+      path: '/translations'
+      fullPath: '/admin/translations'
+      preLoaderRoute: typeof AdminTranslationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/watcher': {
       id: '/admin/watcher'
       path: '/watcher'
@@ -513,12 +532,14 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminTrainWatcherRoute: typeof AdminTrainWatcherRoute
+  AdminTranslationsRoute: typeof AdminTranslationsRoute
   AdminWatcherRoute: typeof AdminWatcherRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminTrainWatcherRoute: AdminTrainWatcherRoute,
+  AdminTranslationsRoute: AdminTranslationsRoute,
   AdminWatcherRoute: AdminWatcherRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

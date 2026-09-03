@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ShieldCheck, Trash2, Eye } from "lucide-react";
+import { ShieldCheck, Trash2, Eye, Languages } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/")({
@@ -112,6 +112,20 @@ function AdminPage() {
           <div>
             <p className="font-display text-lg">Train the Watcher</p>
             <p className="text-xs text-muted-foreground font-body italic">Feed it lore, pick a voice, change its avatar.</p>
+          </div>
+        </div>
+        <span className="text-primary text-sm">→</span>
+      </Link>
+
+      <Link
+        to="/admin/translations"
+        className="flex items-center justify-between rounded-xl border border-border/40 bg-card/40 hover:border-primary/50 hover:bg-card/70 p-5 mb-8 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Languages className="h-6 w-6 text-primary" />
+          <div>
+            <p className="font-display text-lg">Review translations</p>
+            <p className="text-xs text-muted-foreground font-body italic">Correct, approve, regenerate, or remove chapter translations.</p>
           </div>
         </div>
         <span className="text-primary text-sm">→</span>
