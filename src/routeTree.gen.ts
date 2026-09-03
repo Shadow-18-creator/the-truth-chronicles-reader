@@ -30,6 +30,7 @@ import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiPublicTranslateRouteImport } from './routes/api/public/translate'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
 
@@ -141,6 +142,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTranslateRoute = ApiPublicTranslateRouteImport.update({
+  id: '/api/public/translate',
+  path: '/api/public/translate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWatcherChatRoute = ApiWatcherChatRouteImport.update({
   id: '/api/watcher/chat',
   path: '/api/watcher/chat',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   fileRoutesByTo: FileRoutesByTo
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   id:
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   fileRoutesById: FileRoutesById
@@ -321,6 +333,7 @@ export interface RootRouteChildren {
   UUsernameRoute: typeof UUsernameRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicTranslateRoute: typeof ApiPublicTranslateRoute
   ApiWatcherChatRoute: typeof ApiWatcherChatRoute
   ApiWatcherTtsRoute: typeof ApiWatcherTtsRoute
 }
@@ -474,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/translate': {
+      id: '/api/public/translate'
+      path: '/api/public/translate'
+      fullPath: '/api/public/translate'
+      preLoaderRoute: typeof ApiPublicTranslateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/watcher/chat': {
       id: '/api/watcher/chat'
       path: '/api/watcher/chat'
@@ -545,6 +565,7 @@ const rootRouteChildren: RootRouteChildren = {
   UUsernameRoute: UUsernameRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicTranslateRoute: ApiPublicTranslateRoute,
   ApiWatcherChatRoute: ApiWatcherChatRoute,
   ApiWatcherTtsRoute: ApiWatcherTtsRoute,
 }
