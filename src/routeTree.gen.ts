@@ -24,12 +24,14 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminTrainWatcherRouteImport } from './routes/admin.train-watcher'
+import { Route as AdminTranslationsRouteImport } from './routes/admin.translations'
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiPublicTranslateRouteImport } from './routes/api/public/translate'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
 
@@ -110,6 +112,11 @@ const AdminTrainWatcherRoute = AdminTrainWatcherRouteImport.update({
   path: '/train-watcher',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTranslationsRoute = AdminTranslationsRouteImport.update({
+  id: '/translations',
+  path: '/translations',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminWatcherRoute = AdminWatcherRouteImport.update({
   id: '/watcher',
   path: '/watcher',
@@ -141,6 +148,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTranslateRoute = ApiPublicTranslateRouteImport.update({
+  id: '/api/public/translate',
+  path: '/api/public/translate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWatcherChatRoute = ApiWatcherChatRouteImport.update({
   id: '/api/watcher/chat',
   path: '/api/watcher/chat',
@@ -167,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -174,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -191,6 +205,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -198,6 +213,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -217,6 +233,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
@@ -224,6 +241,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
 }
@@ -244,6 +262,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/train-watcher'
+    | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -251,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   fileRoutesByTo: FileRoutesByTo
@@ -268,6 +288,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/train-watcher'
+    | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -275,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   id:
@@ -293,6 +315,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/train-watcher'
+    | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
     | '/chat/$slug'
@@ -300,6 +323,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
   fileRoutesById: FileRoutesById
@@ -321,6 +345,7 @@ export interface RootRouteChildren {
   UUsernameRoute: typeof UUsernameRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicTranslateRoute: typeof ApiPublicTranslateRoute
   ApiWatcherChatRoute: typeof ApiWatcherChatRoute
   ApiWatcherTtsRoute: typeof ApiWatcherTtsRoute
 }
@@ -432,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTrainWatcherRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/translations': {
+      id: '/admin/translations'
+      path: '/translations'
+      fullPath: '/admin/translations'
+      preLoaderRoute: typeof AdminTranslationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/watcher': {
       id: '/admin/watcher'
       path: '/watcher'
@@ -474,6 +506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/translate': {
+      id: '/api/public/translate'
+      path: '/api/public/translate'
+      fullPath: '/api/public/translate'
+      preLoaderRoute: typeof ApiPublicTranslateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/watcher/chat': {
       id: '/api/watcher/chat'
       path: '/api/watcher/chat'
@@ -493,12 +532,14 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminTrainWatcherRoute: typeof AdminTrainWatcherRoute
+  AdminTranslationsRoute: typeof AdminTranslationsRoute
   AdminWatcherRoute: typeof AdminWatcherRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminTrainWatcherRoute: AdminTrainWatcherRoute,
+  AdminTranslationsRoute: AdminTranslationsRoute,
   AdminWatcherRoute: AdminWatcherRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -545,6 +586,7 @@ const rootRouteChildren: RootRouteChildren = {
   UUsernameRoute: UUsernameRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicTranslateRoute: ApiPublicTranslateRoute,
   ApiWatcherChatRoute: ApiWatcherChatRoute,
   ApiWatcherTtsRoute: ApiWatcherTtsRoute,
 }

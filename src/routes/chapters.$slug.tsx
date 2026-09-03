@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2, Languages, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { getChapterRatingStats } from "@/lib/chapter.functions";
+import { getTranslationLanguage, TRANSLATION_LANGUAGES } from "@/lib/translation-catalog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/chapters/$slug")({
   loader: async ({ params }) => {
@@ -135,6 +137,32 @@ function ChapterPage() {
   });
 
   const [commentText, setCommentText] = useState("");
+  const [languageCode, setLanguageCode] = useState("en");
+
+  const translationQuery = useQuery({
+    queryKey: ["chapter-translation", chapter?.id, languageCode],
+    enabled: !!chapter && languageCode !== "en",
+    staleTime: Infinity,
+    queryFn: async () => {
+      if (!chapter || languageCode === "en") return null;
+      const response = await fetch("/api/public/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chapterId: chapter.id, languageCode }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        reviewed?: boolean;
+        translation?: {
+          translatedTitle: string;
+          translatedSummary: string | null;
+          translatedParagraphs: string[];
+        };
+      };
+      if (!response.ok || !payload.translation) throw new Error(payload.error ?? "Translation unavailable.");
+      return payload;
+    },
+  });
 
   useEffect(() => {
     if (!chapter) return;
@@ -150,7 +178,11 @@ function ChapterPage() {
   if (isLoading) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Opening the page…</div>;
   if (!chapter) return null;
 
-  const paragraphs = chapter.content.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const translation = languageCode === "en" ? null : translationQuery.data?.translation;
+  const selectedLanguage = languageCode === "en" ? null : getTranslationLanguage(languageCode);
+  const paragraphs = translation?.translatedParagraphs ?? chapter.content.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const displayTitle = translation?.translatedTitle ?? chapter.title;
+  const displaySummary = translation?.translatedSummary ?? chapter.summary;
   const bookmarkedSet = new Set((lineBookmarks ?? []).map((b) => b.paragraph_index));
 
   const toggleChapterBookmark = async () => {
@@ -207,8 +239,37 @@ function ChapterPage() {
 
       <header className="text-center mb-12 pb-12 border-b border-border/40">
         <p className="font-sans text-xs tracking-[0.4em] uppercase text-primary mb-4">Chapter {chapter.number}</p>
-        <h1 className="font-display text-4xl md:text-6xl text-glow mb-6">{chapter.title}</h1>
-        {chapter.summary && <p className="font-body italic text-muted-foreground text-lg max-w-xl mx-auto">{chapter.summary}</p>}
+        <h1 className="font-display text-4xl md:text-6xl text-glow mb-6">{displayTitle}</h1>
+        {displaySummary && <p className="font-body italic text-muted-foreground text-lg max-w-xl mx-auto">{displaySummary}</p>}
+        <div className="mx-auto mt-7 max-w-sm text-left">
+          <label htmlFor="chapter-language" className="mb-2 flex items-center gap-2 text-xs font-sans uppercase tracking-widest text-muted-foreground">
+            <Languages className="h-4 w-4 text-primary" /> Read in another language
+          </label>
+          <Select value={languageCode} onValueChange={setLanguageCode}>
+            <SelectTrigger id="chapter-language" aria-label="Choose chapter language">
+              <SelectValue placeholder="Choose a language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English · Original</SelectItem>
+              {TRANSLATION_LANGUAGES.map((language) => (
+                <SelectItem key={language.code} value={language.code}>
+                  {language.nativeName} · {language.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {translationQuery.isFetching && (
+            <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing the translation…</p>
+          )}
+          {translationQuery.error instanceof Error && (
+            <p role="alert" className="mt-2 text-xs text-destructive">{translationQuery.error.message}</p>
+          )}
+          {translation && !translationQuery.isFetching && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {translationQuery.data?.reviewed ? "Author-reviewed translation." : "AI translation · the English original remains available."}
+            </p>
+          )}
+        </div>
         <Button onClick={toggleChapterBookmark} variant="outline" size="sm" className="mt-6 border-primary/40">
           {bookmark ? <><BookmarkCheck className="h-4 w-4 mr-2 text-primary" /> Bookmarked</> : <><Bookmark className="h-4 w-4 mr-2" /> Bookmark chapter</>}
         </Button>
@@ -229,7 +290,7 @@ function ChapterPage() {
         )}
       </header>
 
-      <div className="prose-like space-y-6 font-body text-lg leading-[1.85]">
+      <div className="prose-like space-y-6 font-body text-lg leading-[1.85]" dir={selectedLanguage?.dir ?? "ltr"}>
         {paragraphs.map((p, i) => {
           const marked = bookmarkedSet.has(i);
           return (
