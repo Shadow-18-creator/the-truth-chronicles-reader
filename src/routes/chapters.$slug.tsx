@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2, Languages, Loader2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2, Languages, Loader2, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { getChapterRatingStats } from "@/lib/chapter.functions";
 import { getTranslationLanguage, TRANSLATION_LANGUAGES } from "@/lib/translation-catalog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const translationGroups = Array.from(new Set(TRANSLATION_LANGUAGES.map((language) => language.group)));
 
 export const Route = createFileRoute("/chapters/$slug")({
   loader: async ({ params }) => {
@@ -138,6 +140,7 @@ function ChapterPage() {
 
   const [commentText, setCommentText] = useState("");
   const [languageCode, setLanguageCode] = useState("en");
+  const [pendingLanguageCode, setPendingLanguageCode] = useState("en");
 
   const translationQuery = useQuery({
     queryKey: ["chapter-translation", chapter?.id, languageCode],
@@ -241,35 +244,77 @@ function ChapterPage() {
         <p className="font-sans text-xs tracking-[0.4em] uppercase text-primary mb-4">Chapter {chapter.number}</p>
         <h1 className="font-display text-4xl md:text-6xl text-glow mb-6">{displayTitle}</h1>
         {displaySummary && <p className="font-body italic text-muted-foreground text-lg max-w-xl mx-auto">{displaySummary}</p>}
-        <div className="mx-auto mt-7 max-w-sm text-left">
-          <label htmlFor="chapter-language" className="mb-2 flex items-center gap-2 text-xs font-sans uppercase tracking-widest text-muted-foreground">
-            <Languages className="h-4 w-4 text-primary" /> Read in another language
-          </label>
-          <Select value={languageCode} onValueChange={setLanguageCode}>
-            <SelectTrigger id="chapter-language" aria-label="Choose chapter language">
-              <SelectValue placeholder="Choose a language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">English · Original</SelectItem>
-              {TRANSLATION_LANGUAGES.map((language) => (
-                <SelectItem key={language.code} value={language.code}>
-                  {language.nativeName} · {language.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {translationQuery.isFetching && (
-            <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Preparing the translation…</p>
-          )}
-          {translationQuery.error instanceof Error && (
-            <p role="alert" className="mt-2 text-xs text-destructive">{translationQuery.error.message}</p>
-          )}
-          {translation && !translationQuery.isFetching && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {translationQuery.data?.reviewed ? "Author-reviewed translation." : "AI translation · the English original remains available."}
-            </p>
-          )}
-        </div>
+        <section className="mx-auto mt-8 max-w-xl border border-primary/30 bg-card/50 p-5 text-left shadow-arcane" aria-labelledby="chapter-translation-heading">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border border-primary/40 bg-primary/10 text-primary">
+              <Languages className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 id="chapter-translation-heading" className="font-display text-xl">Translate this chapter</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Read the complete chapter in the language you choose. Paragraph order and bookmarks stay aligned with the English original.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div>
+              <label htmlFor="chapter-language" className="mb-2 block font-sans text-xs uppercase tracking-widest text-muted-foreground">Language</label>
+              <Select value={pendingLanguageCode} onValueChange={setPendingLanguageCode}>
+                <SelectTrigger id="chapter-language" aria-label="Choose chapter language">
+                  <SelectValue placeholder="Choose a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English · Original</SelectItem>
+                  {translationGroups.map((group) => (
+                    <SelectGroup key={group}>
+                      <SelectLabel>{group}</SelectLabel>
+                      {TRANSLATION_LANGUAGES.filter((language) => language.group === group).map((language) => (
+                        <SelectItem key={language.code} value={language.code}>
+                          {language.nativeName} · {language.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => setLanguageCode(pendingLanguageCode)}
+              disabled={pendingLanguageCode === "en" || translationQuery.isFetching}
+              className="bg-gold-gradient font-sans text-gold-foreground"
+            >
+              {translationQuery.isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Languages className="mr-2 h-4 w-4" />}
+              Translate chapter
+            </Button>
+          </div>
+
+          <div className="mt-4 min-h-6 text-sm" aria-live="polite">
+            {pendingLanguageCode !== languageCode && pendingLanguageCode !== "en" && !translationQuery.isFetching && (
+              <p className="text-muted-foreground">Choose “Translate chapter” to load the full {getTranslationLanguage(pendingLanguageCode)?.name ?? "chapter"} edition.</p>
+            )}
+            {translationQuery.isFetching && (
+              <p className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Translating the entire chapter…</p>
+            )}
+            {translationQuery.error instanceof Error && !translationQuery.isFetching && (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-destructive" role="alert">
+                <span>{translationQuery.error.message}</span>
+                <Button variant="outline" size="sm" onClick={() => translationQuery.refetch()} className="border-destructive/40 text-destructive hover:bg-destructive/10">
+                  <RefreshCw className="mr-2 h-3.5 w-3.5" /> Try again
+                </Button>
+              </div>
+            )}
+            {languageCode === "en" && pendingLanguageCode === "en" && (
+              <p className="text-muted-foreground">English original</p>
+            )}
+            {translation && !translationQuery.isFetching && languageCode !== "en" && (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
+                <span>{translationQuery.data?.reviewed ? "Author-reviewed translation." : "AI translation · English remains available."}</span>
+                <Button variant="link" size="sm" onClick={() => { setPendingLanguageCode("en"); setLanguageCode("en"); }} className="h-auto p-0 text-primary">
+                  View English
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
         <Button onClick={toggleChapterBookmark} variant="outline" size="sm" className="mt-6 border-primary/40">
           {bookmark ? <><BookmarkCheck className="h-4 w-4 mr-2 text-primary" /> Bookmarked</> : <><Bookmark className="h-4 w-4 mr-2" /> Bookmark chapter</>}
         </Button>
