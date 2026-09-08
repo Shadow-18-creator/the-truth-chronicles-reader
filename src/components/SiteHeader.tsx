@@ -1,5 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search, Pencil, Eye } from "lucide-react";
+import { SeekerAvatar } from "@/components/SeekerAvatar";
 
 const navItems = [
   { to: "/chapters", label: "Chapters", icon: BookOpen },
@@ -21,6 +24,15 @@ const navItems = [
 export function SiteHeader() {
   const { user, isAdmin, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: profile } = useQuery({
+    queryKey: ["header-profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("avatar_url, avatar_style").eq("id", user.id).maybeSingle();
+      return data;
+    },
+  });
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/40 backdrop-blur-xl bg-background/70">
@@ -88,7 +100,7 @@ export function SiteHeader() {
                     aria-label="Your profile"
                     className="relative h-9 w-9 rounded-full overflow-hidden border border-primary/30 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <UserCircle2 className="h-6 w-6" />
+                    <SeekerAvatar style={profile?.avatar_style} imageUrl={profile?.avatar_url} alt="Your profile portrait" className="h-full w-full" glyphClassName="text-lg" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">

@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Search, UserCircle2 } from "lucide-react";
+import { Search } from "lucide-react";
+import { SeekerAvatar } from "@/components/SeekerAvatar";
 
 export const Route = createFileRoute("/users")({
   head: () => ({
@@ -29,7 +30,7 @@ function UsersPage() {
     queryKey: ["users-search", q],
     queryFn: async () => {
       const term = q.trim();
-      let query = supabase.from("profiles").select("id, username, display_name, bio").limit(40);
+      let query = supabase.from("profiles").select("id, username, display_name, bio, avatar_url, avatar_style").limit(40);
       if (term) query = query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
       else query = query.order("created_at", { ascending: false });
       const { data } = await query;
@@ -55,7 +56,7 @@ function UsersPage() {
         {users?.map((u) => (
           <Link key={u.id} to="/u/$username" params={{ username: u.username }}
             className="flex items-center gap-4 rounded-lg border border-border/40 bg-card/40 p-4 hover:border-primary/40 transition-colors">
-            <UserCircle2 className="h-10 w-10 text-primary/70 shrink-0" />
+            <SeekerAvatar style={u.avatar_style} imageUrl={u.avatar_url} alt={`${u.username} portrait`} className="h-10 w-10 shrink-0" glyphClassName="text-lg" />
             <div className="min-w-0">
               <p className="font-display text-lg">{u.display_name || u.username}</p>
               <p className="text-xs font-sans text-muted-foreground">@{u.username}</p>

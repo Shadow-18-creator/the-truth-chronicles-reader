@@ -6,8 +6,9 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageCircle, Star, Heart, UserCircle2, ShieldCheck, Camera } from "lucide-react";
+import { MessageCircle, Star, Heart, ShieldCheck, Camera, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { AVATAR_STYLES, SeekerAvatar, type AvatarStyle } from "@/components/SeekerAvatar";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -63,6 +64,7 @@ function ProfilePage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>("moonlit");
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -75,6 +77,7 @@ function ProfilePage() {
       setUsername(profile.username ?? "");
       setDisplayName(profile.display_name ?? "");
       setBio(profile.bio ?? "");
+      setAvatarStyle((profile.avatar_style as AvatarStyle) || "moonlit");
     }
   }, [profile]);
 
@@ -87,7 +90,7 @@ function ProfilePage() {
       if (taken) { toast.error("That sigil is already taken."); return; }
     }
     const { data: updated, error } = await supabase.from("profiles").update({
-      username: clean, display_name: displayName.trim() || clean, bio: bio.trim() || null,
+      username: clean, display_name: displayName.trim() || clean, bio: bio.trim() || null, avatar_style: avatarStyle,
     }).eq("id", user.id).select().maybeSingle();
     if (error) { toast.error(error.message); return; }
     if (!updated) { toast.error("Could not save — please sign in again."); return; }
@@ -148,11 +151,7 @@ function ProfilePage() {
     <div className="container mx-auto px-4 py-16 max-w-3xl">
       <header className="text-center mb-12">
         <label className="relative inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center mb-4 cursor-pointer group overflow-hidden border border-primary/30">
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="Your portrait" className="h-full w-full object-cover" />
-          ) : (
-            <UserCircle2 className="h-16 w-16" />
-          )}
+          <SeekerAvatar style={profile.avatar_style} imageUrl={profile.avatar_url} alt="Your portrait" className="h-full w-full" glyphClassName="text-4xl" />
           <span className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <Camera className="h-6 w-6" />
           </span>
@@ -191,6 +190,27 @@ function ProfilePage() {
             <div>
               <label className="text-xs font-sans uppercase tracking-widest text-muted-foreground">Bio</label>
               <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} className="mt-1 bg-input/40 border-border/40" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> 2D portrait
+              </div>
+              <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-8">
+                {AVATAR_STYLES.map((avatar) => (
+                  <button
+                    key={avatar.id}
+                    type="button"
+                    onClick={() => setAvatarStyle(avatar.id)}
+                    aria-label={`Choose ${avatar.name} portrait`}
+                    aria-pressed={avatarStyle === avatar.id}
+                    className={`rounded-lg border p-2 transition-colors ${avatarStyle === avatar.id ? "border-primary bg-primary/10" : "border-border/40 hover:border-primary/50"}`}
+                  >
+                    <SeekerAvatar style={avatar.id} className="mx-auto h-10 w-10" glyphClassName="text-lg" />
+                    <span className="mt-1 block truncate text-[10px] text-muted-foreground">{avatar.name}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">Your uploaded portrait remains visible when one is set.</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={save} className="bg-gold-gradient text-gold-foreground">Save</Button>
