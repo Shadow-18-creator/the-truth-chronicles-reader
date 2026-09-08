@@ -10,6 +10,7 @@ import { Send, Heart, Trash2, Ban, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { useServerFn } from "@tanstack/react-start";
 import { sendChatMessage, toggleMessageLike, deleteChatMessage, toggleUserBlock } from "@/lib/chat.functions";
+import { SeekerAvatar } from "@/components/SeekerAvatar";
 
 export const Route = createFileRoute("/chat/$slug")({
   component: ChatRoom,
@@ -44,7 +45,7 @@ function ChatRoom() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chat_messages")
-        .select("id, body, user_id, created_at, profiles:user_id(username, display_name, avatar_url)")
+        .select("id, body, user_id, created_at, profiles:user_id(username, display_name, avatar_url, avatar_style)")
         .eq("room_id", room!.id)
         .order("created_at", { ascending: false })
         .limit(pageCount * PAGE_SIZE);
@@ -183,13 +184,7 @@ function ChatRoom() {
             const canDelete = user && (user.id === m.user_id || isAdmin);
             return (
           <div key={m.id} className="group flex items-start gap-3">
-            {m.profiles?.avatar_url ? (
-              <img src={m.profiles.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-sans text-xs shrink-0">
-                {(m.profiles?.display_name || m.profiles?.username || "?")[0]?.toUpperCase()}
-              </div>
-            )}
+            <SeekerAvatar style={m.profiles?.avatar_style} imageUrl={m.profiles?.avatar_url} alt="Seeker portrait" className="h-8 w-8 shrink-0" glyphClassName="text-sm" />
             <div className={`flex-1 min-w-0 rounded-lg px-3 py-2 ${
               isAuthor
                 ? "bg-gold-gradient text-gold-foreground border border-primary/60 shadow-[0_0_20px_rgba(212,175,55,0.25)]"
