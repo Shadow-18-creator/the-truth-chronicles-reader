@@ -6,9 +6,12 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageCircle, Star, Heart, ShieldCheck, Camera, Sparkles } from "lucide-react";
+import { MessageCircle, Star, Heart, ShieldCheck, Camera, Sparkles, WandSparkles, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { AVATAR_STYLES, SeekerAvatar, type AvatarStyle } from "@/components/SeekerAvatar";
+import { streamImage } from "@/lib/stream-image";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -67,6 +70,13 @@ function ProfilePage() {
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>("moonlit");
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiStyle, setAiStyle] = useState("Mystical fantasy illustration");
+  const [generatedAvatar, setGeneratedAvatar] = useState<string | null>(null);
+  const [generatedAvatarFinal, setGeneratedAvatarFinal] = useState(false);
+  const [generatingAvatar, setGeneratingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   useEffect(() => {
     if (search.edit) setEditing(true);
@@ -117,6 +127,20 @@ function ProfilePage() {
     location.reload();
   };
 
+  const saveAvatarBlob = async (blob: Blob, extension: "jpg" | "png" | "gif" | "webp") => {
+    if (!user) return;
+    setUploading(true);
+    const path = `${user.id}/avatar-${Date.now()}.${extension}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: blob.type });
+    if (upErr) { setUploading(false); toast.error(upErr.message); return; }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
+    setUploading(false);
+    if (dbErr) { toast.error(dbErr.message); return; }
+    toast.success("Portrait updated.");
+    qc.invalidateQueries({ queryKey: ["profile", user.id] });
+  };
+
   const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -132,17 +156,41 @@ function ProfilePage() {
       toast.error("SVG images are not allowed.");
       return;
     }
-    setUploading(true);
     const ext = ALLOWED_EXT[file.type];
-    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
-    if (upErr) { setUploading(false); toast.error(upErr.message); return; }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
-    setUploading(false);
-    if (dbErr) { toast.error(dbErr.message); return; }
-    toast.success("Portrait updated.");
-    qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    await saveAvatarBlob(file, ext);
+  };
+
+  const generateAvatar = async () => {
+    const prompt = aiPrompt.trim();
+    if (prompt.length < 3) { setAvatarError("Describe your character first."); return; }
+    setGeneratingAvatar(true);
+    setAvatarError(null);
+    setGeneratedAvatar(null);
+    setGeneratedAvatarFinal(false);
+    try {
+      await streamImage(
+        "/api/profile/avatar",
+        { prompt: `${aiStyle}; ${prompt}`, partial_images: 1 },
+        (dataUrl, isFinal) => {
+          setGeneratedAvatar(dataUrl);
+          setGeneratedAvatarFinal(isFinal);
+        },
+      );
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message.replace(/^Image generation failed:\s*\d+\s*/, "") : "The portrait could not be created.");
+    } finally {
+      setGeneratingAvatar(false);
+    }
+  };
+
+  const useGeneratedAvatar = async () => {
+    if (!generatedAvatar || !generatedAvatarFinal) return;
+    const blob = await fetch(generatedAvatar).then((response) => response.blob());
+    await saveAvatarBlob(blob, "png");
+    setAiOpen(false);
+    setGeneratedAvatar(null);
+    setAiPrompt("");
+    setAvatarError(null);
   };
 
   if (loading || !user || !profile) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Summoning your sigil…</div>;
@@ -150,19 +198,76 @@ function ProfilePage() {
   return (
     <div className="container mx-auto px-4 py-16 max-w-3xl">
       <header className="text-center mb-12">
-        <label className="relative inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center mb-4 cursor-pointer group overflow-hidden border border-primary/30">
+        <label className="relative inline-flex h-24 w-24 rounded-full bg-primary/15 text-primary items-center justify-center cursor-pointer group overflow-hidden border border-primary/30">
           <SeekerAvatar style={profile.avatar_style} imageUrl={profile.avatar_url} alt="Your portrait" className="h-full w-full" glyphClassName="text-4xl" />
           <span className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <Camera className="h-6 w-6" />
           </span>
           <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploading} />
         </label>
-        <p className="text-xs text-muted-foreground font-sans mb-2">{uploading ? "Uploading…" : "Click portrait to change"}</p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground">
+            <Camera className="h-4 w-4" />
+            Upload photo
+            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={uploadAvatar} disabled={uploading || generatingAvatar} />
+          </label>
+          <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen(true)} disabled={uploading || generatingAvatar}>
+            <WandSparkles className="h-4 w-4" />
+            Create with AI
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground font-sans">{uploading ? "Saving portrait…" : "Upload a photo or create a 2D portrait beside it"}</p>
         <p className="text-primary text-xs font-sans tracking-[0.3em] uppercase mb-2">@{profile.username}</p>
         <h1 className="font-display text-4xl text-glow">{profile.display_name || profile.username}</h1>
         {profile.bio && <p className="font-body italic text-muted-foreground mt-3 max-w-md mx-auto">{profile.bio}</p>}
         <p className="text-xs text-muted-foreground/60 font-sans mt-3">Only you see your account email: {user.email}</p>
       </header>
+
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="bg-card border-border/40 sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Create your 2D portrait</DialogTitle>
+            <DialogDescription className="font-body text-muted-foreground">
+              Describe the character you want. Lovable AI will create a square portrait for your profile.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="avatar-style" className="text-xs font-sans uppercase tracking-widest text-muted-foreground">Visual direction</label>
+              <Select value={aiStyle} onValueChange={setAiStyle}>
+                <SelectTrigger id="avatar-style" className="bg-input/40 border-border/40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mystical fantasy illustration">Mystical fantasy illustration</SelectItem>
+                  <SelectItem value="Manga-inspired ink and color">Manga-inspired ink and color</SelectItem>
+                  <SelectItem value="Dark graphic novel art">Dark graphic novel art</SelectItem>
+                  <SelectItem value="Painterly storybook portrait">Painterly storybook portrait</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="avatar-prompt" className="text-xs font-sans uppercase tracking-widest text-muted-foreground">Character description</label>
+              <Textarea id="avatar-prompt" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value.slice(0, 600))} rows={4} maxLength={600} placeholder="A quiet young seeker with silver eyes, a midnight cloak, and a small golden sigil..." className="bg-input/40 border-border/40" />
+              <p className="text-right text-[11px] text-muted-foreground">{aiPrompt.length}/600</p>
+            </div>
+            {generatedAvatar && (
+              <div className="space-y-3 rounded-md border border-primary/30 bg-background/30 p-3">
+                <img src={generatedAvatar} alt="Generated portrait preview" className={`mx-auto aspect-square h-56 w-56 rounded-full object-cover border border-primary/40 ${generatedAvatarFinal ? "blur-0" : "blur-2xl"} transition-[filter]`} />
+                <p className="text-center text-xs text-muted-foreground">{generatedAvatarFinal ? "Preview ready — save it when you like it." : "The portrait is still taking shape…"}</p>
+              </div>
+            )}
+            {avatarError && <p role="alert" className="text-sm text-destructive">{avatarError}</p>}
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setAiOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={generateAvatar} disabled={generatingAvatar || !aiPrompt.trim()}>
+                {generatingAvatar ? <Loader2 className="animate-spin" /> : generatedAvatar ? <RefreshCw /> : <WandSparkles />}
+                {generatingAvatar ? "Creating…" : generatedAvatar ? "Generate again" : "Create portrait"}
+              </Button>
+              <Button type="button" onClick={useGeneratedAvatar} disabled={!generatedAvatarFinal || uploading} className="bg-gold-gradient text-gold-foreground">Use this portrait</Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Portrait generation uses the site’s available AI allowance and may be limited during busy periods.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
         <StatCard icon={MessageCircle} value={stats?.comments ?? 0} label="Whispers" />
