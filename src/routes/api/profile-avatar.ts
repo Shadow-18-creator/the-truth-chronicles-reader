@@ -6,7 +6,7 @@ import { generateImage, profileAvatarImageSettings } from "@/lib/image-gateway.s
 
 const RATE_LIMIT = { limit: 3, windowMinutes: 10 };
 
-export const Route = createFileRoute("/api/profile/avatar")({
+export const Route = createFileRoute("/api/profile-avatar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
