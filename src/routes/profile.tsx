@@ -127,18 +127,19 @@ function ProfilePage() {
     location.reload();
   };
 
-  const saveAvatarBlob = async (blob: Blob, extension: "jpg" | "png" | "gif" | "webp") => {
-    if (!user) return;
+  const saveAvatarBlob = async (blob: Blob, extension: string) => {
+    if (!user) return false;
     setUploading(true);
     const path = `${user.id}/avatar-${Date.now()}.${extension}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: blob.type });
-    if (upErr) { setUploading(false); toast.error(upErr.message); return; }
+    if (upErr) { setUploading(false); toast.error(upErr.message); return false; }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
     setUploading(false);
-    if (dbErr) { toast.error(dbErr.message); return; }
+    if (dbErr) { toast.error(dbErr.message); return false; }
     toast.success("Portrait updated.");
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    return true;
   };
 
   const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +169,9 @@ function ProfilePage() {
     setGeneratedAvatar(null);
     setGeneratedAvatarFinal(false);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Please sign in again before creating a portrait.");
       await streamImage(
         "/api/profile/avatar",
         { prompt: `${aiStyle}; ${prompt}`, partial_images: 1 },
@@ -175,6 +179,8 @@ function ProfilePage() {
           setGeneratedAvatar(dataUrl);
           setGeneratedAvatarFinal(isFinal);
         },
+        undefined,
+        { Authorization: `Bearer ${token}` },
       );
     } catch (error) {
       setAvatarError(error instanceof Error ? error.message.replace(/^Image generation failed:\s*\d+\s*/, "") : "The portrait could not be created.");
@@ -186,11 +192,13 @@ function ProfilePage() {
   const useGeneratedAvatar = async () => {
     if (!generatedAvatar || !generatedAvatarFinal) return;
     const blob = await fetch(generatedAvatar).then((response) => response.blob());
-    await saveAvatarBlob(blob, "png");
-    setAiOpen(false);
-    setGeneratedAvatar(null);
-    setAiPrompt("");
-    setAvatarError(null);
+    const saved = await saveAvatarBlob(blob, "png");
+    if (saved) {
+      setAiOpen(false);
+      setGeneratedAvatar(null);
+      setAiPrompt("");
+      setAvatarError(null);
+    }
   };
 
   if (loading || !user || !profile) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Summoning your sigil…</div>;
