@@ -12,6 +12,14 @@ const env = loadEnv("development", process.cwd(), "");
 const publicKey = env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 const projectId = env.SUPABASE_PROJECT_ID || env.VITE_SUPABASE_PROJECT_ID || "";
 const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL || "";
+const supabaseDefines = {
+  "globalThis.process.env.SUPABASE_ANON_KEY": JSON.stringify(publicKey),
+  "globalThis.process.env.SUPABASE_PROJECT_ID": JSON.stringify(projectId),
+  "globalThis.process.env.SUPABASE_URL": JSON.stringify(supabaseUrl),
+  "process.env.SUPABASE_ANON_KEY": JSON.stringify(publicKey),
+  "process.env.SUPABASE_PROJECT_ID": JSON.stringify(projectId),
+  "process.env.SUPABASE_URL": JSON.stringify(supabaseUrl),
+};
 
 export default defineConfig({
   envDefine: false,
@@ -21,14 +29,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    define: {
-      "globalThis.process.env.SUPABASE_ANON_KEY": JSON.stringify(publicKey),
-      "globalThis.process.env.SUPABASE_PROJECT_ID": JSON.stringify(projectId),
-      "globalThis.process.env.SUPABASE_URL": JSON.stringify(supabaseUrl),
-      "process.env.SUPABASE_ANON_KEY": JSON.stringify(publicKey),
-      "process.env.SUPABASE_PROJECT_ID": JSON.stringify(projectId),
-      "process.env.SUPABASE_URL": JSON.stringify(supabaseUrl),
-    },
+    define: supabaseDefines,
     plugins: [mcpPlugin()],
   },
 });
