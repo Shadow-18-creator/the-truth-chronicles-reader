@@ -50,7 +50,6 @@ export const Route = createFileRoute("/api/profile/avatar")({
             { ...profileAvatarImageSettings, apiKey: key },
             finalPrompt,
             stream,
-            request.signal,
           );
           if (!upstream.ok || !upstream.body) {
             return new Response(await upstream.text(), {

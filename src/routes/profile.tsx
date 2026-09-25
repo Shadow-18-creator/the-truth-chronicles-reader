@@ -147,7 +147,7 @@ function ProfilePage() {
     if (!file || !user) return;
     if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB."); return; }
     const ALLOWED = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
-    const ALLOWED_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" };
+    const ALLOWED_EXT: Record<string, "jpg" | "png" | "gif" | "webp"> = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" };
     if (!ALLOWED.includes(file.type as any)) {
       toast.error("Only JPG, PNG, GIF, or WebP images are allowed.");
       return;
@@ -158,6 +158,7 @@ function ProfilePage() {
       return;
     }
     const ext = ALLOWED_EXT[file.type];
+    if (!ext) return;
     await saveAvatarBlob(file, ext);
   };
 
@@ -179,7 +180,6 @@ function ProfilePage() {
           setGeneratedAvatar(dataUrl);
           setGeneratedAvatarFinal(isFinal);
         },
-        undefined,
         { Authorization: `Bearer ${token}` },
       );
     } catch (error) {

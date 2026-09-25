@@ -12,6 +12,7 @@ export async function streamImage(
   input: Record<string, unknown>,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
   signal?: AbortSignal,
+  headers?: Record<string, string>,
 ): Promise<void> {
   const send = (stream: boolean) => {
     signal?.throwIfAborted();
@@ -19,7 +20,7 @@ export async function streamImage(
     if (!stream) delete payload.partial_images;
     return fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(payload),
       signal: signal ?? null,
     });
