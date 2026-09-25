@@ -26,12 +26,12 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminTrainWatcherRouteImport } from './routes/admin.train-watcher'
 import { Route as AdminTranslationsRouteImport } from './routes/admin.translations'
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
-import { Route as ApiProfileAvatarRouteImport } from './routes/api/profile-avatar'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiProfileAvatarRouteImport } from './routes/api/profile/avatar'
 import { Route as ApiPublicTranslateRouteImport } from './routes/api/public/translate'
 import { Route as ApiWatcherChatRouteImport } from './routes/api/watcher.chat'
 import { Route as ApiWatcherTtsRouteImport } from './routes/api/watcher.tts'
@@ -123,11 +123,6 @@ const AdminWatcherRoute = AdminWatcherRouteImport.update({
   path: '/watcher',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiProfileAvatarRoute = ApiProfileAvatarRouteImport.update({
-  id: '/api/profile-avatar',
-  path: '/api/profile-avatar',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -154,6 +149,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiProfileAvatarRoute = ApiProfileAvatarRouteImport.update({
+  id: '/api/profile/avatar',
+  path: '/api/profile/avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTranslateRoute = ApiPublicTranslateRouteImport.update({
   id: '/api/public/translate',
   path: '/api/public/translate',
@@ -187,13 +187,13 @@ export interface FileRoutesByFullPath {
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
   '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
-  '/api/profile-avatar': typeof ApiProfileAvatarRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/profile/avatar': typeof ApiProfileAvatarRoute
   '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
@@ -214,13 +214,13 @@ export interface FileRoutesByTo {
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
   '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
-  '/api/profile-avatar': typeof ApiProfileAvatarRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/profile/avatar': typeof ApiProfileAvatarRoute
   '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
@@ -243,13 +243,13 @@ export interface FileRoutesById {
   '/admin/train-watcher': typeof AdminTrainWatcherRoute
   '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
-  '/api/profile-avatar': typeof ApiProfileAvatarRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/profile/avatar': typeof ApiProfileAvatarRoute
   '/api/public/translate': typeof ApiPublicTranslateRoute
   '/api/watcher/chat': typeof ApiWatcherChatRoute
   '/api/watcher/tts': typeof ApiWatcherTtsRoute
@@ -273,13 +273,13 @@ export interface FileRouteTypes {
     | '/admin/train-watcher'
     | '/admin/translations'
     | '/admin/watcher'
-    | '/api/profile-avatar'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
     | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/profile/avatar'
     | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
@@ -300,13 +300,13 @@ export interface FileRouteTypes {
     | '/admin/train-watcher'
     | '/admin/translations'
     | '/admin/watcher'
-    | '/api/profile-avatar'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
     | '/admin'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/profile/avatar'
     | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
@@ -328,13 +328,13 @@ export interface FileRouteTypes {
     | '/admin/train-watcher'
     | '/admin/translations'
     | '/admin/watcher'
-    | '/api/profile-avatar'
     | '/chapters/$slug'
     | '/chat/$slug'
     | '/u/$username'
     | '/admin/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/profile/avatar'
     | '/api/public/translate'
     | '/api/watcher/chat'
     | '/api/watcher/tts'
@@ -354,10 +354,10 @@ export interface RootRouteChildren {
   WatcherRoute: typeof WatcherRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  ApiProfileAvatarRoute: typeof ApiProfileAvatarRoute
   UUsernameRoute: typeof UUsernameRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiProfileAvatarRoute: typeof ApiProfileAvatarRoute
   ApiPublicTranslateRoute: typeof ApiPublicTranslateRoute
   ApiWatcherChatRoute: typeof ApiWatcherChatRoute
   ApiWatcherTtsRoute: typeof ApiWatcherTtsRoute
@@ -484,13 +484,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWatcherRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/api/profile-avatar': {
-      id: '/api/profile-avatar'
-      path: '/api/profile-avatar'
-      fullPath: '/api/profile-avatar'
-      preLoaderRoute: typeof ApiProfileAvatarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/chapters/$slug': {
       id: '/chapters/$slug'
       path: '/$slug'
@@ -524,6 +517,13 @@ declare module '@tanstack/react-router' {
       path: '/.mcp/invoke-tool/$tool'
       fullPath: '/.mcp/invoke-tool/$tool'
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/avatar': {
+      id: '/api/profile/avatar'
+      path: '/api/profile/avatar'
+      fullPath: '/api/profile/avatar'
+      preLoaderRoute: typeof ApiProfileAvatarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/translate': {
@@ -603,10 +603,10 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
-  ApiProfileAvatarRoute: ApiProfileAvatarRoute,
   UUsernameRoute: UUsernameRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiProfileAvatarRoute: ApiProfileAvatarRoute,
   ApiPublicTranslateRoute: ApiPublicTranslateRoute,
   ApiWatcherChatRoute: ApiWatcherChatRoute,
   ApiWatcherTtsRoute: ApiWatcherTtsRoute,

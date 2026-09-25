@@ -11,17 +11,15 @@ export async function streamImage(
   endpoint: string,
   input: Record<string, unknown>,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
-  signal?: AbortSignal,
+  headers?: Record<string, string>,
 ): Promise<void> {
   const send = (stream: boolean) => {
-    signal?.throwIfAborted();
     const payload: Record<string, unknown> = { ...input, stream };
     if (!stream) delete payload.partial_images;
     return fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(payload),
-      signal: signal ?? null,
     });
   };
 
@@ -73,7 +71,6 @@ export async function streamImage(
     await reader.cancel().catch(() => {});
   }
 
-  signal?.throwIfAborted();
   if (streamError) throw new Error(streamError);
   if (!sawAnyEvent) {
     const replay = await send(false);
