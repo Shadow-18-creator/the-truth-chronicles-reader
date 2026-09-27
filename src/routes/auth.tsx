@@ -25,7 +25,7 @@ function AuthPage() {
   const { next } = Route.useSearch();
   const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
   const goNext = () => {
-    if (safeNext) window.location.href = safeNext;
+    if (safeNext) navigate({ to: safeNext });
     else navigate({ to: "/" });
   };
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -38,13 +38,18 @@ function AuthPage() {
     setLoading(true);
     if (mode === "signup") {
       const emailRedirectTo = safeNext ? `${window.location.origin}${safeNext}` : window.location.origin;
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo },
       });
       if (error) toast.error(error.message);
-      else { toast.success("Welcome to The Boy Who Saw The Truth."); goNext(); }
+      else if (data.session) {
+        toast.success("Welcome to The Boy Who Saw The Truth.");
+        goNext();
+      } else {
+        toast.success("Check your email to confirm your account, then return to continue.");
+      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) toast.error(error.message);
@@ -60,7 +65,9 @@ function AuthPage() {
           <Moon className="h-8 w-8 text-primary mx-auto mb-3 glow-gold" />
           <h1 className="font-display text-3xl text-glow">{mode === "signin" ? "Return to the veil" : "Cross the threshold"}</h1>
           <p className="text-muted-foreground text-sm mt-2 font-body italic">
-            {mode === "signin" ? "Sign in to continue your reading." : "Create an account to bookmark and gather."}
+            {mode === "signin"
+              ? safeNext === "/profile" ? "Sign in to open your profile and create a portrait." : "Sign in to continue your reading."
+              : "Create an account to bookmark, gather, and shape your portrait."}
           </p>
         </div>
 

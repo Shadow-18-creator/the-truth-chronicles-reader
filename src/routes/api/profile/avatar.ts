@@ -4,7 +4,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
 import { generateImage, profileAvatarImageSettings } from "@/lib/image-gateway.server";
 
-const RATE_LIMIT = { limit: 3, windowMinutes: 10 };
+const BURST_RATE_LIMIT = { limit: 3, windowMinutes: 10 };
+const DAILY_RATE_LIMIT = { limit: 12, windowMinutes: 24 * 60 };
 
 export const Route = createFileRoute("/api/profile/avatar")({
   server: {
@@ -27,8 +28,11 @@ export const Route = createFileRoute("/api/profile/avatar")({
           const userId = claims?.claims?.sub;
           if (claimsError || !userId) return new Response("Your session has expired. Please sign in again.", { status: 401 });
 
-          const rate = await checkRateLimit(userId, "profile_avatar_generation", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
-          if (!rate.allowed) return new Response("You have reached the portrait limit. Try again in a few minutes.", { status: 429 });
+           const dailyRate = await checkRateLimit(userId, "profile_avatar_generation_daily", DAILY_RATE_LIMIT.limit, DAILY_RATE_LIMIT.windowMinutes);
+           if (!dailyRate.allowed) return new Response("You have reached today’s portrait limit of 12. Try again tomorrow.", { status: 429 });
+
+           const burstRate = await checkRateLimit(userId, "profile_avatar_generation", BURST_RATE_LIMIT.limit, BURST_RATE_LIMIT.windowMinutes);
+           if (!burstRate.allowed) return new Response("You have reached the short-term portrait limit. Try again in a few minutes.", { status: 429 });
 
           const body = (await request.json()) as { prompt?: unknown; stream?: unknown };
           if (typeof body.prompt !== "string" || body.prompt.trim().length < 3) {

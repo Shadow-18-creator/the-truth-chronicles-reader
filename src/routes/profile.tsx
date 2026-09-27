@@ -33,7 +33,7 @@ function ProfilePage() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
+    if (!loading && !user) navigate({ to: "/auth", search: { next: "/profile" }, replace: true });
   }, [loading, user, navigate]);
 
   const { data: profile } = useQuery({
@@ -272,7 +272,7 @@ function ProfilePage() {
               </Button>
               <Button type="button" onClick={useGeneratedAvatar} disabled={!generatedAvatarFinal || uploading} className="bg-gold-gradient text-gold-foreground">Use this portrait</Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">Portrait generation uses the site’s available AI allowance and may be limited during busy periods.</p>
+            <p className="text-[11px] text-muted-foreground">You can create up to 12 portraits per day, with no more than 3 every 10 minutes.</p>
           </div>
         </DialogContent>
       </Dialog>
