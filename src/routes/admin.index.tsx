@@ -166,11 +166,25 @@ function AdminPage() {
       <div className="space-y-2">
         {chapters?.map((c) => (
           <div key={c.id} className="flex items-center justify-between rounded-lg border border-border/40 bg-card/40 p-4">
-            <div>
-              <p className="text-xs text-primary tracking-widest uppercase">Ch. {c.number} {!c.published_at && "(draft)"}</p>
-              <p className="font-display">{c.title}</p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+             <Link
+               to="/chapters/$slug"
+               params={{ slug: c.slug }}
+               className="min-w-0 flex-1 rounded-md outline-none transition-colors hover:text-primary focus-visible:ring-1 focus-visible:ring-ring"
+             >
+               <p className="text-xs text-primary tracking-widest uppercase">Ch. {c.number} {!c.published_at && "(draft)"}</p>
+               <p className="font-display truncate pr-4">{c.title}</p>
+             </Link>
+             <div className="flex shrink-0 items-center gap-1">
+               <Button asChild variant="outline" size="sm">
+                 <Link to="/chapters/$slug" params={{ slug: c.slug }}>
+                   <Eye className="h-4 w-4" />
+                   <span className="hidden sm:inline">Open chapter</span>
+                 </Link>
+               </Button>
+               <Button variant="ghost" size="sm" onClick={() => remove(c.id)} aria-label={`Delete ${c.title}`}>
+                 <Trash2 className="h-4 w-4 text-destructive" />
+               </Button>
+             </div>
           </div>
         ))}
       </div>
