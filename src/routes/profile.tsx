@@ -129,14 +129,25 @@ function ProfilePage() {
 
   const saveAvatarBlob = async (blob: Blob, extension: string) => {
     if (!user) return false;
+    if (blob.size > 10 * 1024 * 1024) {
+      toast.error("Portraits must be under 10MB.");
+      return false;
+    }
     setUploading(true);
     const path = `${user.id}/avatar-${Date.now()}.${extension}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: blob.type });
-    if (upErr) { setUploading(false); toast.error(upErr.message); return false; }
+    if (upErr) {
+      setUploading(false);
+      toast.error(upErr.message.includes("row-level security") ? "Your portrait could not be saved. Please sign in again and try once more." : upErr.message);
+      return false;
+    }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
     setUploading(false);
-    if (dbErr) { toast.error(dbErr.message); return false; }
+    if (dbErr) {
+      toast.error(dbErr.message.includes("row-level security") ? "Your profile could not be updated. Please sign in again and try once more." : dbErr.message);
+      return false;
+    }
     toast.success("Portrait updated.");
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
     return true;
