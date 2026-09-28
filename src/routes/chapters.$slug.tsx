@@ -16,11 +16,13 @@ const translationGroups = Array.from(new Set(TRANSLATION_LANGUAGES.map((language
 
 export const Route = createFileRoute("/chapters/$slug")({
   loader: async ({ params }) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("chapters")
-      .select("title, summary, number, published_at")
+      .select("*")
       .eq("slug", params.slug)
       .maybeSingle();
+    if (error) throw error;
+    if (!data) throw notFound();
     return { chapter: data };
   },
   head: ({ params, loaderData }) => {
@@ -58,16 +60,45 @@ export const Route = createFileRoute("/chapters/$slug")({
         : [],
     };
   },
+  pendingComponent: ChapterPending,
+  errorComponent: ChapterError,
+  notFoundComponent: ChapterNotFound,
   component: ChapterPage,
 });
+
+function ChapterPending() {
+  return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Opening the chapter…</div>;
+}
+
+function ChapterError({ reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="container mx-auto max-w-xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-glow">The chapter could not be opened</h1>
+      <p className="mt-3 text-muted-foreground">Please try opening it again.</p>
+      <Button className="mt-6 bg-gold-gradient text-gold-foreground" onClick={reset}>Try again</Button>
+    </div>
+  );
+}
+
+function ChapterNotFound() {
+  return (
+    <div className="container mx-auto max-w-xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-glow">Chapter not found</h1>
+      <p className="mt-3 text-muted-foreground">This chapter is not available to readers yet.</p>
+      <Link to="/chapters" className="mt-6 inline-flex text-primary underline">Return to all chapters</Link>
+    </div>
+  );
+}
 
 function ChapterPage() {
   const { slug } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
+  const { chapter: loadedChapter } = Route.useLoaderData();
 
-  const { data: chapter, isLoading } = useQuery({
+  const { data: chapter, isLoading, isError } = useQuery({
     queryKey: ["chapter", slug],
+    initialData: loadedChapter,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chapters")
@@ -178,8 +209,8 @@ function ChapterPage() {
     return () => { supabase.removeChannel(ch); };
   }, [chapter, qc]);
 
-  if (isLoading) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Opening the page…</div>;
-  if (!chapter) return null;
+  if (isLoading) return <ChapterPending />;
+  if (isError || !chapter) return <ChapterError error={new Error("Chapter request failed")} reset={() => qc.invalidateQueries({ queryKey: ["chapter", slug] })} />;
 
   const translation = languageCode === "en" ? null : translationQuery.data?.translation;
   const selectedLanguage = languageCode === "en" ? null : getTranslationLanguage(languageCode);
