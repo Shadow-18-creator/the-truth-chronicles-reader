@@ -143,7 +143,7 @@ function ChapterPage() {
 
   const { data: comments } = useQuery({
     queryKey: ["comments", chapter?.id],
-    enabled: !!chapter,
+    enabled: !!chapter && !!user,
     queryFn: async () => {
       const { data } = await supabase
         .from("comments")
@@ -429,7 +429,8 @@ function ChapterPage() {
               )}
             </div>
           ))}
-          {comments && comments.length === 0 && <p className="text-muted-foreground italic">No whispers yet. Be the first.</p>}
+          {!user && <p className="text-muted-foreground italic">Sign in to read the conversation and leave a whisper.</p>}
+          {user && comments && comments.length === 0 && <p className="text-muted-foreground italic">No whispers yet. Be the first.</p>}
         </div>
       </section>
     </article>

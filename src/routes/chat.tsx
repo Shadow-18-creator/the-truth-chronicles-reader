@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { MessagesSquare, Crown, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/chat")({
@@ -18,11 +19,13 @@ export const Route = createFileRoute("/chat")({
 });
 
 function ChatLayout() {
+  const { user, loading } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isRoom = pathname !== "/chat" && pathname.startsWith("/chat/");
 
   const { data: rooms } = useQuery({
     queryKey: ["chat-rooms"],
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("chat_rooms").select("*").order("kind").order("name");
       return data ?? [];
@@ -37,7 +40,13 @@ function ChatLayout() {
         <p className="text-primary text-xs font-sans tracking-[0.3em] uppercase mb-3">Gathering Place</p>
         <h1 className="font-display text-5xl text-glow">The Halls</h1>
       </header>
-      <div className="grid md:grid-cols-[260px_1fr] gap-6">
+      {!loading && !user && (
+        <div className="rounded-lg border border-border/40 bg-card/40 p-8 text-center">
+          <p className="font-body italic text-muted-foreground">Sign in to browse the halls and join conversations.</p>
+          <Link to="/auth" search={{ next: "/chat" }} className="mt-4 inline-flex text-primary underline">Sign in</Link>
+        </div>
+      )}
+      {user && <div className="grid md:grid-cols-[260px_1fr] gap-6">
         <aside className="rounded-lg border border-border/40 bg-card/40 p-3 h-fit">
           <p className="font-sans text-xs uppercase tracking-widest text-muted-foreground px-3 py-2">Rooms</p>
           <nav className="space-y-1">
@@ -61,7 +70,7 @@ function ChatLayout() {
             </div>
           )}
         </section>
-      </div>
+      </div>}
     </div>
   );
 }

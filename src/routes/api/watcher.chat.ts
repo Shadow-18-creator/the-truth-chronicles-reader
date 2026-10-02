@@ -64,7 +64,12 @@ export const Route = createFileRoute("/api/watcher/chat")({
             { auth: { persistSession: false, autoRefreshToken: false } },
           );
 
-          const { data: cfg } = await supabase.from("watcher_config").select("*").maybeSingle();
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: cfg, error: configError } = await supabaseAdmin.from("watcher_config").select("*").eq("id", true).maybeSingle();
+          if (configError) {
+            console.error("Watcher configuration unavailable", configError);
+            return new Response("The Watcher is silent.", { status: 500 });
+          }
           const name = cfg?.name ?? "Watcher";
           const basePrompt = cfg?.system_prompt ?? "You are the Watcher.";
           const lore = cfg?.lore ?? "";
@@ -87,7 +92,6 @@ export const Route = createFileRoute("/api/watcher/chat")({
                 const embJson = (await embRes.json()) as { data?: { embedding?: number[] }[] };
                 const vector = embJson?.data?.[0]?.embedding;
                 if (Array.isArray(vector)) {
-                  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
                   const { data: matches } = await supabaseAdmin.rpc("match_watcher_chunks", {
                     query_embedding: JSON.stringify(vector) as unknown as string,
                     match_count: 12,

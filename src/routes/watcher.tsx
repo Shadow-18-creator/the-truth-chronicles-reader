@@ -36,7 +36,7 @@ function WatcherPage() {
   const { data: cfg } = useQuery({
     queryKey: ["watcher-config-public"],
     queryFn: async () => {
-      const { data } = await supabase.from("watcher_config").select("name, tagline, avatar_url, voice_id").maybeSingle();
+      const { data } = await supabase.from("watcher_config").select("name, tagline, avatar_url, voice_id").eq("id", true).maybeSingle();
       return data;
     },
   });

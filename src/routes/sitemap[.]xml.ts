@@ -11,8 +11,6 @@ export const Route = createFileRoute("/sitemap.xml")({
         const entries: { path: string; lastmod?: string; changefreq?: string; priority?: string }[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/chapters", changefreq: "weekly", priority: "0.9" },
-          { path: "/chat", changefreq: "daily", priority: "0.6" },
-          { path: "/users", changefreq: "weekly", priority: "0.5" },
         ];
 
         const { data: chapters } = await supabase
@@ -26,11 +24,6 @@ export const Route = createFileRoute("/sitemap.xml")({
             changefreq: "monthly",
             priority: "0.8",
           });
-        }
-
-        const { data: profiles } = await supabase.from("profiles").select("username");
-        for (const p of profiles ?? []) {
-          if (p.username) entries.push({ path: `/u/${p.username}`, changefreq: "monthly", priority: "0.3" });
         }
 
         const urls = entries.map((e) =>

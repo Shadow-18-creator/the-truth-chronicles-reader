@@ -1,25 +1,16 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { MessageCircle, Star, Heart, ArrowLeft } from "lucide-react";
 import { SeekerAvatar } from "@/components/SeekerAvatar";
 
 export const Route = createFileRoute("/u/$username")({
-  loader: async ({ params }) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("username, display_name, bio")
-      .eq("username", params.username)
-      .maybeSingle();
-    return { profile: data };
-  },
-  head: ({ params, loaderData }) => {
-    const p = loaderData?.profile;
+  head: ({ params }) => {
     const url = `https://the-truth-chronicles-reader.lovable.app/u/${params.username}`;
-    const name = p?.display_name || p?.username || params.username;
+    const name = params.username;
     const title = `${name} (@${params.username}) — Seeker on The Boy Who Saw The Truth`;
-    const description = (p?.bio?.slice(0, 158)) ||
-      `Profile of seeker ${name} on The Boy Who Saw The Truth.`;
+    const description = `Sign in to view seeker ${name}'s profile on The Boy Who Saw The Truth.`;
     return {
       meta: [
         { title },
@@ -37,19 +28,20 @@ export const Route = createFileRoute("/u/$username")({
 
 function PublicProfile() {
   const { username } = Route.useParams();
+  const { user, loading } = useAuth();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["public-profile", username],
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
-      if (!data) throw notFound();
       return data;
     },
   });
 
   const { data: stats } = useQuery({
     queryKey: ["public-profile-stats", profile?.id],
-    enabled: !!profile,
+    enabled: !!profile && !!user,
     queryFn: async () => {
       const [c, r, l] = await Promise.all([
         supabase.from("comments").select("id", { count: "exact", head: true }).eq("user_id", profile!.id),
@@ -60,8 +52,15 @@ function PublicProfile() {
     },
   });
 
-  if (isLoading) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Searching the veil…</div>;
-  if (!profile) return null;
+  if (loading || (user && isLoading)) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Searching the veil…</div>;
+  if (!user) return (
+    <div className="container mx-auto px-4 py-20 max-w-xl text-center">
+      <h1 className="font-display text-3xl text-glow">Sign in to view this profile</h1>
+      <p className="mt-3 text-muted-foreground">Reader profiles are available to signed-in members.</p>
+      <Link to="/auth" search={{ next: `/u/${encodeURIComponent(username)}` }} className="mt-6 inline-flex text-primary underline">Sign in</Link>
+    </div>
+  );
+  if (!profile) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Seeker not found.</div>;
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-3xl">
