@@ -19,14 +19,20 @@ export default defineTool({
     let cq = sb.from("chapters").select("id, number, title").not("published_at", "is", null);
     cq = slug ? cq.eq("slug", slug) : cq.eq("number", number!);
     const { data: chapter, error: cerr } = await cq.maybeSingle();
-    if (cerr) return errText(cerr.message);
+    if (cerr) {
+      console.error("MCP chapter lookup failed", cerr);
+      return errText("Could not load that chapter. Please try again.");
+    }
     if (!chapter) return errText("Chapter not found");
     const { data, error } = await sb
       .from("comments")
       .insert({ chapter_id: chapter.id, user_id: ctx.getUserId()!, body })
       .select("id, body, created_at")
       .single();
-    if (error) return errText(error.message);
+    if (error) {
+      console.error("MCP comment creation failed", error);
+      return errText("Could not post your comment. Please try again.");
+    }
     return {
       content: [{ type: "text", text: `Comment posted on chapter ${chapter.number}.` }],
       structuredContent: { comment: data },

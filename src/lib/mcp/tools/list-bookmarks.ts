@@ -15,7 +15,10 @@ export default defineTool({
       .select("chapter_id, created_at, chapters(number, slug, title)")
       .eq("user_id", ctx.getUserId()!)
       .order("created_at", { ascending: false });
-    if (error) return errText(error.message);
+    if (error) {
+      console.error("MCP bookmark lookup failed", error);
+      return errText("Could not load your bookmarks. Please try again.");
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { bookmarks: data ?? [] },
