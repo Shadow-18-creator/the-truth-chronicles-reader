@@ -26,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminTrainWatcherRouteImport } from './routes/admin.train-watcher'
 import { Route as AdminTranslationsRouteImport } from './routes/admin.translations'
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
+import { Route as ChaptersIndexRouteImport } from './routes/chapters.index'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -123,6 +124,11 @@ const AdminWatcherRoute = AdminWatcherRouteImport.update({
   path: '/watcher',
   getParentRoute: () => AdminRoute,
 } as any)
+const ChaptersIndexRoute = ChaptersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ChaptersRoute,
+} as any)
 const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
+  '/chapters/': typeof ChaptersIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -202,7 +209,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/bookmarks': typeof BookmarksRoute
-  '/chapters': typeof ChaptersRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/mcp': typeof McpRoute
   '/profile': typeof ProfileRoute
@@ -218,6 +224,7 @@ export interface FileRoutesByTo {
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin': typeof AdminIndexRoute
+  '/chapters': typeof ChaptersIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -247,6 +254,7 @@ export interface FileRoutesById {
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
+  '/chapters/': typeof ChaptersIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -277,6 +285,7 @@ export interface FileRouteTypes {
     | '/chat/$slug'
     | '/u/$username'
     | '/admin/'
+    | '/chapters/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/profile/avatar'
@@ -288,7 +297,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/bookmarks'
-    | '/chapters'
     | '/chat'
     | '/mcp'
     | '/profile'
@@ -304,6 +312,7 @@ export interface FileRouteTypes {
     | '/chat/$slug'
     | '/u/$username'
     | '/admin'
+    | '/chapters'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/profile/avatar'
@@ -332,6 +341,7 @@ export interface FileRouteTypes {
     | '/chat/$slug'
     | '/u/$username'
     | '/admin/'
+    | '/chapters/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/profile/avatar'
@@ -484,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWatcherRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/chapters/': {
+      id: '/chapters/'
+      path: '/'
+      fullPath: '/chapters/'
+      preLoaderRoute: typeof ChaptersIndexRouteImport
+      parentRoute: typeof ChaptersRoute
+    }
     '/chapters/$slug': {
       id: '/chapters/$slug'
       path: '/$slug'
@@ -568,10 +585,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface ChaptersRouteChildren {
   ChaptersSlugRoute: typeof ChaptersSlugRoute
+  ChaptersIndexRoute: typeof ChaptersIndexRoute
 }
 
 const ChaptersRouteChildren: ChaptersRouteChildren = {
   ChaptersSlugRoute: ChaptersSlugRoute,
+  ChaptersIndexRoute: ChaptersIndexRoute,
 }
 
 const ChaptersRouteWithChildren = ChaptersRoute._addFileChildren(
