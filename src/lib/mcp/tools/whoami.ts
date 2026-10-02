@@ -15,7 +15,10 @@ export default defineTool({
       .select("id, username, display_name, bio")
       .eq("id", ctx.getUserId()!)
       .maybeSingle();
-    if (error) return errText(error.message);
+    if (error) {
+      console.error("MCP profile lookup failed", error);
+      return errText("Could not load your profile. Please try again.");
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { profile: data, email: ctx.getUserEmail() ?? null },

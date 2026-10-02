@@ -1,16 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
 
-type Msg = { role: "user" | "assistant"; content: string };
-
-type Body = {
-  messages?: Msg[];
-  aiKey?: string;
-  aiProvider?: "openai" | "gemini";
-  elevenLabsKey?: string;
-};
+const requestSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string().trim().min(1).max(4000),
+  }).strict()).min(1).max(40),
+  aiKey: z.string().max(512).optional(),
+  aiProvider: z.enum(["openai", "gemini"]).optional(),
+  elevenLabsKey: z.string().max(512).optional(),
+}).strict();
+type Msg = z.infer<typeof requestSchema>["messages"][number];
 
 const RATE_LIMIT = { limit: 12, windowMinutes: 1 };
 
@@ -47,11 +50,12 @@ export const Route = createFileRoute("/api/watcher/chat")({
             return new Response("Sign in to talk with the Watcher.", { status: 401 });
           }
 
-          const body = (await request.json()) as Body;
+          const rawBody: unknown = await request.json();
+          const parsedBody = requestSchema.safeParse(rawBody);
+          if (!parsedBody.success) return new Response("Invalid chat request.", { status: 400 });
+          const body = parsedBody.data;
           const { messages } = body;
-          if (!Array.isArray(messages) || messages.length === 0) {
-            return new Response("messages required", { status: 400 });
-          }
+          if (messages.at(-1)?.role !== "user") return new Response("A user message is required.", { status: 400 });
 
           const rate = await checkRateLimit(userId, "watcher_chat", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
           if (!rate.allowed) {

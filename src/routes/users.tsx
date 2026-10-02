@@ -32,7 +32,11 @@ function UsersPage() {
     queryKey: ["users-search", q],
     enabled: !!user,
     queryFn: async () => {
-      const term = q.trim();
+      const term = q
+        .normalize("NFKC")
+        .replace(/[^\p{L}\p{N} _-]/gu, "")
+        .trim()
+        .slice(0, 40);
       let query = supabase.from("profiles").select("id, username, display_name, bio, avatar_url, avatar_style").limit(40);
       if (term) query = query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
       else query = query.order("created_at", { ascending: false });
