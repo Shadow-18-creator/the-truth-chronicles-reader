@@ -7,6 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getAllChapterRatings } from "@/lib/chapter.functions";
 
 export const Route = createFileRoute("/chapters")({
+  component: ChaptersLayout,
   head: () => ({
     meta: [
       { title: "Chapters — The Boy Who Saw The Truth" },
@@ -30,8 +31,11 @@ export const Route = createFileRoute("/chapters")({
       },
     ],
   }),
-  component: ChaptersPage,
 });
+
+function ChaptersLayout() {
+  return <Outlet />;
+}
 
 function ChaptersPage() {
   const fetchRatings = useServerFn(getAllChapterRatings);
