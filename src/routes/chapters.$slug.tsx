@@ -405,7 +405,7 @@ function ChapterPage() {
             <Button onClick={postComment} className="mt-3 bg-gold-gradient text-gold-foreground font-sans" size="sm">Send into the dark</Button>
           </div>
         ) : (
-          <p className="mb-8 text-muted-foreground"><Link to="/auth" className="text-primary underline">Sign in</Link> to leave a whisper.</p>
+          <p className="mb-8 text-muted-foreground"><Link to="/auth" search={{ next: `/chapters/${encodeURIComponent(slug)}` }} className="text-primary underline">Sign in</Link> to read or leave a whisper.</p>
         )}
 
         <div className="space-y-4">

@@ -60,6 +60,7 @@ function ChatRoom() {
 
   const { data: admins } = useQuery({
     queryKey: ["admin-ids"],
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
       return new Set((data ?? []).map((r: any) => r.user_id));
