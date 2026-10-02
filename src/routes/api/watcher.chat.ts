@@ -25,15 +25,35 @@ export const Route = createFileRoute("/api/watcher/chat")({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const authHeader = request.headers.get("authorization");
+          if (!authHeader?.startsWith("Bearer ")) {
+            return new Response("Sign in to talk with the Watcher.", { status: 401 });
+          }
+
+          const token = authHeader.slice("Bearer ".length).trim();
+          const url = process.env.SUPABASE_URL;
+          const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+          if (!token || !url || !publishableKey) {
+            return new Response("Sign in to talk with the Watcher.", { status: 401 });
+          }
+
+          const authClient = createClient<Database>(url, publishableKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } },
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+          const userId = claimsData?.claims?.sub;
+          if (claimsError || typeof userId !== "string" || !userId) {
+            return new Response("Sign in to talk with the Watcher.", { status: 401 });
+          }
+
           const body = (await request.json()) as Body;
           const { messages } = body;
           if (!Array.isArray(messages) || messages.length === 0) {
             return new Response("messages required", { status: 400 });
           }
 
-          const ip = getClientIp(request);
-          const rateKey = ip;
-          const rate = await checkRateLimit(rateKey, "watcher_chat", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
+          const rate = await checkRateLimit(userId, "watcher_chat", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
           if (!rate.allowed) {
             return new Response("The Watcher is resting — too many questions too quickly. Try again in a moment.", { status: 429 });
           }

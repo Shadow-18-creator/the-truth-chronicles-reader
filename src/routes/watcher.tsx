@@ -112,9 +112,15 @@ function WatcherPage() {
     setMessages(next);
     setSending(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("Sign in to talk with the Watcher.");
+        return;
+      }
       const res = await fetch("/api/watcher/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           messages: next,
           ...(usingOwnKey ? { aiKey: aiKey.trim(), aiProvider } : {}),
@@ -140,9 +146,15 @@ function WatcherPage() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeakingId(idx);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("Sign in to hear the Watcher's voice.");
+        return;
+      }
       const res = await fetch("/api/watcher/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           text,
           voiceId: activeVoice,
