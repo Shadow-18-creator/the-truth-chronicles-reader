@@ -143,7 +143,7 @@ function ChapterPage() {
 
   const { data: comments } = useQuery({
     queryKey: ["comments", chapter?.id],
-    enabled: !!chapter,
+    enabled: !!chapter && !!user,
     queryFn: async () => {
       const { data } = await supabase
         .from("comments")
@@ -405,7 +405,7 @@ function ChapterPage() {
             <Button onClick={postComment} className="mt-3 bg-gold-gradient text-gold-foreground font-sans" size="sm">Send into the dark</Button>
           </div>
         ) : (
-          <p className="mb-8 text-muted-foreground"><Link to="/auth" className="text-primary underline">Sign in</Link> to leave a whisper.</p>
+          <p className="mb-8 text-muted-foreground"><Link to="/auth" search={{ next: `/chapters/${encodeURIComponent(slug)}` }} className="text-primary underline">Sign in</Link> to read or leave a whisper.</p>
         )}
 
         <div className="space-y-4">
@@ -429,7 +429,8 @@ function ChapterPage() {
               )}
             </div>
           ))}
-          {comments && comments.length === 0 && <p className="text-muted-foreground italic">No whispers yet. Be the first.</p>}
+          {!user && <p className="text-muted-foreground italic">Sign in to read the conversation and leave a whisper.</p>}
+          {user && comments && comments.length === 0 && <p className="text-muted-foreground italic">No whispers yet. Be the first.</p>}
         </div>
       </section>
     </article>

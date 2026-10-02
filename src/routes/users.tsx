@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { SeekerAvatar } from "@/components/SeekerAvatar";
@@ -24,10 +25,12 @@ export const Route = createFileRoute("/users")({
 });
 
 function UsersPage() {
+  const { user, loading } = useAuth();
   const [q, setQ] = useState("");
 
   const { data: users, isFetching } = useQuery({
     queryKey: ["users-search", q],
+    enabled: !!user,
     queryFn: async () => {
       const term = q.trim();
       let query = supabase.from("profiles").select("id, username, display_name, bio, avatar_url, avatar_style").limit(40);
@@ -45,14 +48,21 @@ function UsersPage() {
         <h1 className="font-display text-5xl text-glow">The Roster</h1>
       </header>
 
-      <div className="relative mb-8">
+      {!loading && !user && (
+        <div className="rounded-lg border border-border/40 bg-card/40 p-8 text-center">
+          <p className="font-body italic text-muted-foreground">Sign in to browse and search reader profiles.</p>
+          <Link to="/auth" search={{ next: "/users" }} className="mt-4 inline-flex text-primary underline">Sign in</Link>
+        </div>
+      )}
+
+      {user && <div className="relative mb-8">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by username…"
           aria-label="Search seekers by username"
           className="pl-10 bg-input/40 border-border/40 font-body" />
-      </div>
+      </div>}
 
-      <div className="space-y-2">
+      {user && <div className="space-y-2">
         {users?.map((u) => (
           <Link key={u.id} to="/u/$username" params={{ username: u.username }}
             className="flex items-center gap-4 rounded-lg border border-border/40 bg-card/40 p-4 hover:border-primary/40 transition-colors">
@@ -66,7 +76,7 @@ function UsersPage() {
         {!isFetching && users && users.length === 0 && (
           <p className="text-center text-muted-foreground italic py-8">No seekers match that name.</p>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

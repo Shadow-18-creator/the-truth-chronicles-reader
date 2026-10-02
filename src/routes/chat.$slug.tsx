@@ -32,6 +32,7 @@ function ChatRoom() {
 
   const { data: room } = useQuery({
     queryKey: ["room", slug],
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("chat_rooms").select("*").eq("slug", slug).maybeSingle();
       return data;
@@ -59,6 +60,7 @@ function ChatRoom() {
 
   const { data: admins } = useQuery({
     queryKey: ["admin-ids"],
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
       return new Set((data ?? []).map((r: any) => r.user_id));
@@ -156,6 +158,12 @@ function ChatRoom() {
     }
   };
 
+  if (!user) return (
+    <div className="p-8 text-center">
+      <p className="text-muted-foreground">Sign in to read messages and join this hall.</p>
+      <Link to="/auth" search={{ next: `/chat/${encodeURIComponent(slug)}` }} className="mt-3 inline-flex text-primary underline">Sign in</Link>
+    </div>
+  );
   if (!room) return <div className="p-8 text-muted-foreground">Loading room…</div>;
 
   return (
