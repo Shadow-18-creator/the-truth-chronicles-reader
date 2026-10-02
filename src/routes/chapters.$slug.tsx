@@ -10,12 +10,15 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { getChapterRatingStats } from "@/lib/chapter.functions";
 import { getTranslationLanguage, TRANSLATION_LANGUAGES } from "@/lib/translation-catalog";
+import type { Database } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+type Chapter = Database["public"]["Tables"]["chapters"]["Row"];
 
 const translationGroups = Array.from(new Set(TRANSLATION_LANGUAGES.map((language) => language.group)));
 
 export const Route = createFileRoute("/chapters/$slug")({
-  loader: async ({ params }) => {
+  loader: async ({ params }): Promise<{ chapter: Chapter }> => {
     const { data, error } = await supabase
       .from("chapters")
       .select("*")
@@ -70,7 +73,7 @@ function ChapterPending() {
   return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Opening the chapter…</div>;
 }
 
-function ChapterError({ reset }: { error: Error; reset: () => void }) {
+function ChapterError({ reset }: { error: unknown; reset: () => void }) {
   return (
     <div className="container mx-auto max-w-xl px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-glow">The chapter could not be opened</h1>
