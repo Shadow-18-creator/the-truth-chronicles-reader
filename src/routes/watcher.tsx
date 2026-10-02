@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useServerFn } from "@tanstack/react-start";
+import { getPublicWatcherConfig } from "@/lib/watcher.functions";
 
 export const Route = createFileRoute("/watcher")({
   head: () => ({
@@ -33,12 +35,10 @@ const AI_PROVIDER_KEY = "watcher-ai-provider";
 const ELEVEN_KEY_KEY = "watcher-elevenlabs-key";
 
 function WatcherPage() {
+  const fetchPublicConfig = useServerFn(getPublicWatcherConfig);
   const { data: cfg } = useQuery({
     queryKey: ["watcher-config-public"],
-    queryFn: async () => {
-      const { data } = await supabase.from("watcher_config").select("name, tagline, avatar_url, voice_id").eq("id", true).maybeSingle();
-      return data;
-    },
+    queryFn: () => fetchPublicConfig(),
   });
 
   const [messages, setMessages] = useState<Msg[]>([]);
