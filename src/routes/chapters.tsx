@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/chapters")({
+  component: ChaptersLayout,
   head: () => ({
     meta: [
       { title: "Chapters — The Boy Who Saw The Truth" },
