@@ -33,7 +33,10 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Read, bookmark, and discuss a serialized novel of veils and shadows." },
       { property: "og:url", content: "https://the-truth-chronicles-reader.lovable.app/" },
     ],
-    links: [{ rel: "canonical", href: "https://the-truth-chronicles-reader.lovable.app/" }],
+    links: [
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "canonical", href: "https://the-truth-chronicles-reader.lovable.app/" },
+    ],
   }),
   component: Index,
 });
