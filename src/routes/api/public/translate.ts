@@ -39,20 +39,21 @@ export const Route = createFileRoute("/api/public/translate")({
           if (!body.chapterId || !body.languageCode) return jsonError("Chapter and language are required.", 400);
           if (!languageCodes.has(body.languageCode)) return jsonError("That language is not supported.", 400);
 
-          const rate = await checkRateLimit(
-            request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown",
-            "chapter_translation",
-            8,
-            1,
-          );
-          if (!rate.allowed) return jsonError("Translations are briefly rate limited. Try again in a moment.", 429);
-
           const supabaseUrl = process.env["SUPABASE_URL"];
           const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
-          const lovableApiKey = process.env["LOVABLE_API_KEY"];
-          if (!supabaseUrl || !publishableKey || !lovableApiKey) return jsonError("Translation service is not configured.", 503);
+          if (!supabaseUrl || !publishableKey) return jsonError("Translation service is not configured.", 503);
           const supabase = createClient<Database>(supabaseUrl, publishableKey, {
             auth: { persistSession: false, autoRefreshToken: false },
+            global: {
+              fetch: (input, init) => {
+                const headers = new Headers(init?.headers);
+                if (publishableKey.startsWith("sb_") && headers.get("Authorization") === `Bearer ${publishableKey}`) {
+                  headers.delete("Authorization");
+                }
+                headers.set("apikey", publishableKey);
+                return fetch(input, { ...init, headers });
+              },
+            },
           });
           const { data: chapter, error: chapterError } = await supabase
             .from("chapters")
@@ -63,14 +64,25 @@ export const Route = createFileRoute("/api/public/translate")({
           if (chapterError || !chapter) return jsonError("Chapter not found.", 404);
 
           const sourceContentHash = await hashContent(chapter.content);
-          const { data: cached } = await supabase
+          const paragraphs = splitParagraphs(chapter.content);
+          const { data: cached, error: cacheError } = await supabase
             .from("chapter_translations")
             .select("translated_title, translated_summary, translated_paragraphs, source_content_hash, status, reviewed")
             .eq("chapter_id", chapter.id)
             .eq("language_code", body.languageCode)
             .eq("status", "ready")
             .maybeSingle();
-          if (cached && cached.source_content_hash === sourceContentHash) {
+          if (cacheError) {
+            console.error("Translation cache read error", cacheError);
+            return jsonError("Saved translations are temporarily unavailable. Please try again.", 503);
+          }
+          if (
+            cached &&
+            cached.source_content_hash === sourceContentHash &&
+            typeof cached.translated_title === "string" &&
+            Array.isArray(cached.translated_paragraphs) &&
+            cached.translated_paragraphs.length === paragraphs.length
+          ) {
             return Response.json({
               sourceContentHash,
               reviewed: cached.reviewed,
@@ -82,9 +94,19 @@ export const Route = createFileRoute("/api/public/translate")({
             });
           }
 
+          const rate = await checkRateLimit(
+            request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown",
+            "chapter_translation",
+            8,
+            1,
+          );
+          if (!rate.allowed) return jsonError("Translations are briefly rate limited. Try again in a moment.", 429);
+
+          const lovableApiKey = process.env["LOVABLE_API_KEY"];
+          if (!lovableApiKey) return jsonError("Translation service is not configured.", 503);
+
           const language = TRANSLATION_LANGUAGES.find((item) => item.code === body.languageCode);
           if (!language) return jsonError("That language is not supported.", 400);
-          const paragraphs = splitParagraphs(chapter.content);
           const prompt = [
             `Translate this published novel chapter from English into ${language.name} (${language.nativeName}).`,
             "Return valid JSON only with exactly these keys: translatedTitle, translatedSummary, translatedParagraphs.",
