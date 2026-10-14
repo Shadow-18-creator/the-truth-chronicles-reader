@@ -16,7 +16,7 @@ export function ScriptoriumWatcher({ draft, onUseText }: { draft: string; onUseT
 
   const ask = async (mode: Mode, question: string) => {
     if (!draft.trim() && mode !== "chat") { toast.error("Write something in the chapter first."); return; }
-    const next: Msg[] = [...messages, { role: "user", content: question }].slice(-20);
+    const next: Msg[] = ([...messages, { role: "user", content: question }] as Msg[]).slice(-20);
     setMessages(next);
     setBusy(mode);
     try {
