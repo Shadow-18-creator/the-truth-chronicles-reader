@@ -62,25 +62,49 @@ export const Route = createFileRoute("/api/keeper/chat")({
             .join("\n\n")
             .slice(0, 30000);
 
-          const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.LOVABLE_API_KEY}` },
+            headers: {
+              "Content-Type": "application/json",
+              "Lovable-API-Key": process.env.LOVABLE_API_KEY ?? "",
+              "X-Lovable-AIG-SDK": "fetch",
+            },
             body: JSON.stringify({
-              model: "google/gemini-3.6-flash",
-              max_tokens: 400,
-              messages: [
-                { role: "system", content: `${KEEPER_PROMPT}\n\n# Published chapters\n${corpus || "(nothing published yet)"}` },
-                ...messages.slice(-6),
-              ],
+              model: "openai/gpt-6-astra",
+              stream: true,
+              store: false,
+              reasoning: { effort: "low" },
+              max_output_tokens: 1200,
+              instructions: `${KEEPER_PROMPT}\n\n# Published chapters\n${corpus || "(nothing published yet)"}`,
+              input: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
             }),
           });
-          if (!res.ok) {
+          if (!res.ok || !res.body) {
             console.error("Keeper gateway error", res.status, await res.text());
             if (res.status === 429) return new Response("Too many seekers at once — try again shortly.", { status: 429 });
             return new Response("The Keeper is silent.", { status: 500 });
           }
-          const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-          return Response.json({ reply: json?.choices?.[0]?.message?.content ?? "", remaining: daily.remaining });
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = "";
+          let reply = "";
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+            for (const line of lines) {
+              if (!line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if (!payload || payload === "[DONE]") continue;
+              try {
+                const evt = JSON.parse(payload) as { type?: string; delta?: string };
+                if (evt.type === "response.output_text.delta" && evt.delta) reply += evt.delta;
+              } catch { /* ignore partial */ }
+            }
+          }
+          return Response.json({ reply, remaining: daily.remaining });
         } catch (e) {
           console.error("Keeper chat error", e);
           return new Response("The Keeper is silent.", { status: 500 });
