@@ -12,6 +12,8 @@ const requestSchema = z.object({
   aiKey: z.string().max(512).optional(),
   aiProvider: z.enum(["openai", "gemini"]).optional(),
   elevenLabsKey: z.string().max(512).optional(),
+  mode: z.enum(["chat", "polish", "consistency"]).optional(),
+  draft: z.string().max(60000).optional(),
 }).strict();
 type Msg = z.infer<typeof requestSchema>["messages"][number];
 
@@ -48,6 +50,11 @@ export const Route = createFileRoute("/api/watcher/chat")({
           const userId = claimsData?.claims?.sub;
           if (claimsError || typeof userId !== "string" || !userId) {
             return new Response("Sign in to talk with the Watcher.", { status: 401 });
+          }
+
+          const { data: isAdmin } = await authClient.rpc("has_role", { _user_id: userId, _role: "admin" });
+          if (!isAdmin) {
+            return new Response("The Watcher answers only to the author. Readers can talk with The Keeper.", { status: 403 });
           }
 
           const rawBody: unknown = await request.json();
@@ -135,6 +142,16 @@ export const Route = createFileRoute("/api/watcher/chat")({
             trainingImages.length
               ? `# Visual references\nYou have been shown ${trainingImages.length} training image(s) depicting canonical characters, places, or symbols from the story. Treat what you see in those images as truth.`
               : "",
+            body.draft?.trim()
+              ? `# The author's current draft (in the Scriptorium)\n${body.draft.trim()}`
+              : "",
+            body.mode === "polish"
+              ? "# Task\nYou are now the author's private writing partner. Step out of in-world riddles. Rewrite the passage the author gives you (or the draft) to improve prose, rhythm, grammar and imagery while keeping their voice, meaning and the story's mystical tone. Return the polished passage first, then a short bullet list of what you changed."
+              : body.mode === "consistency"
+                ? "# Task\nYou are now the author's private continuity editor. Compare the draft against the lore, retrieved knowledge and chapter summaries. List every contradiction, name/timeline/power inconsistency, or unclear lore point as bullets with the exact quote and a suggested fix. If nothing conflicts, say so plainly."
+                : body.draft?.trim()
+                  ? "# Task\nYou are speaking privately with the author while they write. Be a helpful, candid collaborator: answer questions, suggest ideas and point out issues. You may step out of character when it helps the author."
+                  : "",
           ]
             .filter(Boolean)
             .join("\n\n");

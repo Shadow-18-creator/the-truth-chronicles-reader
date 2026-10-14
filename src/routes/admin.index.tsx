@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ShieldCheck, Trash2, Eye, Languages } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { ScriptoriumWatcher } from "@/components/ScriptoriumWatcher";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -96,7 +97,7 @@ function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-4xl">
+    <div className="container mx-auto px-4 py-16 max-w-6xl">
       <header className="text-center mb-12">
         <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-3" />
         <h1 className="font-display text-5xl text-glow">Scriptorium</h1>
@@ -131,7 +132,8 @@ function AdminPage() {
         <span className="text-primary text-sm">→</span>
       </Link>
 
-      <form onSubmit={create} className="rounded-xl border border-border/40 bg-card/60 p-6 mb-12 space-y-4">
+      <div className="grid lg:grid-cols-[1fr_360px] gap-6 mb-12 items-start">
+      <form onSubmit={create} className="rounded-xl border border-border/40 bg-card/60 p-6 space-y-4">
         <h2 className="font-display text-2xl">New chapter</h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
@@ -161,6 +163,8 @@ function AdminPage() {
         </label>
         <Button type="submit" className="bg-gold-gradient text-gold-foreground">Scribe chapter</Button>
       </form>
+      <ScriptoriumWatcher draft={content} onUseText={setContent} />
+      </div>
 
       <h2 className="font-display text-2xl mb-4">Existing chapters</h2>
       <div className="space-y-2">
