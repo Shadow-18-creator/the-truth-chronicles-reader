@@ -13,14 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicWatcherConfig } from "@/lib/watcher.functions";
+import { KEEPER_DAILY_LIMIT, KEEPER_NAME } from "@/lib/keeper";
 
 export const Route = createFileRoute("/watcher")({
   head: () => ({
     meta: [
-      { title: "Talk to Watcher — The Boy Who Saw The Truth" },
-      { name: "description", content: "Speak with the Watcher, the mystical guardian who knows the events of the novel. Ask questions and hear its voice." },
-      { property: "og:title", content: "Talk to Watcher — The Boy Who Saw The Truth" },
-      { property: "og:description", content: "Speak with the Watcher, the mystical guardian of the novel." },
+      { title: "Talk to The Keeper — The Boy Who Saw The Truth" },
+      { name: "description", content: "Speak with The Keeper, guardian of the published chapters. Ask questions and hear its voice." },
+      { property: "og:title", content: "Talk to The Keeper — The Boy Who Saw The Truth" },
+      { property: "og:description", content: "Speak with The Keeper, guardian of the published chapters." },
       { property: "og:url", content: "https://the-truth-chronicles-reader.lovable.app/watcher" },
     ],
     links: [{ rel: "canonical", href: "https://the-truth-chronicles-reader.lovable.app/watcher" }],
@@ -50,6 +51,7 @@ function WatcherPage() {
   const [aiProvider, setAiProvider] = useState<"openai" | "gemini">("openai");
   const [elevenKey, setElevenKey] = useState<string>("");
   const [keysOpen, setKeysOpen] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -90,7 +92,7 @@ function WatcherPage() {
       localStorage.removeItem(ELEVEN_KEY_KEY);
     }
     setKeysOpen(false);
-    toast.success(usingOwnKey ? "Your keys saved — the Watcher will use them for your sessions." : "Site keys restored.");
+    toast.success(usingOwnKey ? "Your keys saved — The Keeper will use them for your sessions." : "Site keys restored.");
   };
 
   const clearKeys = () => {
@@ -115,24 +117,24 @@ function WatcherPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        toast.error("Sign in to talk with the Watcher.");
+        toast.error("Sign in to talk with The Keeper.");
         return;
       }
-      const res = await fetch("/api/watcher/chat", {
+      const res = await fetch("/api/keeper/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
-          messages: next,
-          ...(usingOwnKey ? { aiKey: aiKey.trim(), aiProvider } : {}),
+          messages: next.slice(-20),
         }),
       });
       if (!res.ok) {
         const err = await res.text();
-        toast.error(err || "The Watcher is silent.");
+        toast.error(err || "The Keeper is silent.");
         setMessages(next);
         return;
       }
-      const { reply } = await res.json();
+      const { reply, remaining: left } = await res.json();
+      if (typeof left === "number") setRemaining(left);
       setMessages([...next, { role: "assistant", content: reply || "…" }]);
     } catch {
       toast.error("The veil is torn — try again.");
@@ -142,14 +144,14 @@ function WatcherPage() {
   };
 
   const speak = async (idx: number, text: string) => {
-    if (!activeVoice) { toast.error("The Watcher has no voice yet."); return; }
+    if (!activeVoice) { toast.error("The Keeper has no voice yet."); return; }
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeakingId(idx);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
-        toast.error("Sign in to hear the Watcher's voice.");
+        toast.error("Sign in to hear The Keeper's voice.");
         return;
       }
       const res = await fetch("/api/watcher/tts", {
@@ -174,7 +176,7 @@ function WatcherPage() {
     }
   };
 
-  const name = cfg?.name ?? "Watcher";
+  const name = KEEPER_NAME;
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
@@ -189,10 +191,11 @@ function WatcherPage() {
             </div>
           )}
           <h1 className="font-display text-5xl text-glow">{name}</h1>
-          {cfg?.tagline && <p className="text-muted-foreground italic font-body">{cfg.tagline}</p>}
+          <p className="text-muted-foreground italic font-body">Guardian of the published pages.</p>
+          <p className="text-xs text-muted-foreground font-sans">{remaining ?? KEEPER_DAILY_LIMIT} of {KEEPER_DAILY_LIMIT} messages left today</p>
           <div className="flex flex-col items-center gap-1 mt-2">
             <label htmlFor="watcher-voice" className="text-xs font-sans tracking-[0.2em] uppercase text-muted-foreground">
-              Choose the Watcher's voice
+              Choose The Keeper's voice
             </label>
             <Select value={activeVoice} onValueChange={chooseVoice}>
               <SelectTrigger id="watcher-voice" className="w-[260px] bg-input/40 border-border/40 font-body">
@@ -212,38 +215,17 @@ function WatcherPage() {
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="border-primary/40 text-primary font-sans">
                   <KeyRound className="h-4 w-4 mr-2" />
-                  Use my own keys
+                  Use my own voice key
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border/40">
                 <DialogHeader>
-                  <DialogTitle className="font-display">Use your own keys</DialogTitle>
+                  <DialogTitle className="font-display">Use your own voice key</DialogTitle>
                   <DialogDescription className="font-body text-muted-foreground">
-                    Enter your own API keys to power the Watcher with your credits. Keys stay in this browser only — never on the server.
+                    Enter your own ElevenLabs key to hear The Keeper with your credits. It stays in this browser only.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="ai-key" className="font-sans text-xs uppercase tracking-widest">AI key</Label>
-                    <Select value={aiProvider} onValueChange={(v) => setAiProvider(v as "openai" | "gemini")}>
-                      <SelectTrigger id="ai-provider" className="bg-input/40 border-border/40 font-body">
-                        <SelectValue placeholder="Provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                        <SelectItem value="gemini">Google Gemini</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      id="ai-key"
-                      type="password"
-                      value={aiKey}
-                      onChange={(e) => setAiKey(e.target.value)}
-                      placeholder="sk-... or AIza..."
-                      className="bg-input/40 border-border/40 font-body"
-                    />
-                    <p className="text-[11px] text-muted-foreground/70 font-body">Leave blank to use the site's shared AI key.</p>
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="eleven-key" className="font-sans text-xs uppercase tracking-widest">ElevenLabs key</Label>
                     <Input
@@ -263,12 +245,6 @@ function WatcherPage() {
                 </div>
               </DialogContent>
             </Dialog>
-            {usingOwnKey && (
-              <Badge variant="outline" className="border-primary/40 text-primary font-sans">
-                <KeyRound className="h-3 w-3 mr-1" />
-                Using your AI key
-              </Badge>
-            )}
             {elevenKey.trim() && (
               <Badge variant="outline" className="border-primary/40 text-primary font-sans">
                 <Volume2 className="h-3 w-3 mr-1" />
@@ -282,7 +258,7 @@ function WatcherPage() {
       <div className="rounded-xl border border-border/40 bg-card/50 min-h-[50vh] flex flex-col">
         <div className="flex-1 p-6 space-y-4 overflow-y-auto max-h-[60vh]">
           {messages.length === 0 && (
-            <p className="text-center text-muted-foreground italic py-16">Ask the Watcher a question about the tale…</p>
+            <p className="text-center text-muted-foreground italic py-16">Ask The Keeper a question about the tale…</p>
           )}
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -297,7 +273,7 @@ function WatcherPage() {
                     onClick={() => speak(i, m.content)}
                     disabled={speakingId === i}
                     className="mt-2 flex items-center gap-1 text-xs opacity-70 hover:opacity-100"
-                    aria-label="Hear the Watcher"
+                    aria-label="Hear The Keeper"
                   >
                     {speakingId === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Volume2 className="h-3 w-3" />}
                     <span>Hear</span>
@@ -309,7 +285,7 @@ function WatcherPage() {
           {sending && (
             <div className="flex justify-start">
               <div className="rounded-lg px-4 py-3 bg-card/60 border border-border/40 text-muted-foreground italic font-body">
-                The Watcher stirs…
+                The Keeper stirs…
               </div>
             </div>
           )}
@@ -319,8 +295,8 @@ function WatcherPage() {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask the Watcher…"
-            aria-label="Question for the Watcher"
+            placeholder="Ask The Keeper…"
+            aria-label="Question for The Keeper"
             disabled={sending}
             className="bg-input/40 border-border/40 font-body"
           />

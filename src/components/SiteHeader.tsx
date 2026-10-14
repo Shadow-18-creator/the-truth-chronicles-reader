@@ -16,7 +16,7 @@ import { SeekerAvatar } from "@/components/SeekerAvatar";
 const navItems = [
   { to: "/chapters", label: "Chapters", icon: BookOpen },
   { to: "/chat", label: "Halls", icon: MessagesSquare },
-  { to: "/watcher", label: "Talk to Watcher", icon: Eye },
+  { to: "/watcher", label: "Talk to The Keeper", icon: Eye },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
   { to: "/users", label: "Seekers", icon: Search },
 ];
