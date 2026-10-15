@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
+import { WATCHER_CRAFT_KNOWLEDGE } from "@/lib/watcher-craft";
 
 const requestSchema = z.object({
   messages: z.array(z.object({
@@ -135,6 +136,7 @@ export const Route = createFileRoute("/api/watcher/chat")({
             basePrompt,
             `Your name is ${name}. Never break character.`,
             lore ? `# Additional Lore\n${lore}` : "",
+            WATCHER_CRAFT_KNOWLEDGE,
             retrieved
               ? `# Retrieved knowledge (most relevant passages from the author's training library — prefer these when answering)\n${retrieved}`
               : "",
