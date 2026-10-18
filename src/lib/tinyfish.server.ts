@@ -16,7 +16,6 @@ export class TinyFishError extends Error {
 export async function researchPublicWeb(question: string, signal?: AbortSignal): Promise<string> {
   const planResponse = await generateResponse({
     model: "openai/gpt-6-astra",
-    store: false,
     reasoning: { effort: "low" },
     max_output_tokens: 600,
     instructions: `Classify a question for optional public-web research. Return ONLY JSON {"research":boolean,"topic":string}.
