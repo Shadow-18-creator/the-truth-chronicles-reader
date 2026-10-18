@@ -20,7 +20,7 @@ describe("TinyFish public research boundaries", () => {
   });
   test("sends only the abstract public topic, not private text, to TinyFish", async () => {
     process.env.TINYFISH_API_KEY = "test-only-credential";
-    const requests: string[] = [];
+    const requests = [];
     globalThis.fetch = mock(async (_input, init) => {
       requests.push(String(init?.body));
       return Response.json({ status: "COMPLETED", result: { summary: "Use dialogue with subtext.", sources: [] } });
