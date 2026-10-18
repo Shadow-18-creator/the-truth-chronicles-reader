@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { KEEPER_DAILY_LIMIT } from "./keeper";
 
@@ -21,7 +22,7 @@ describe("TinyFish public research boundaries", () => {
   test("sends only the abstract public topic, not private text, to TinyFish", async () => {
     process.env.TINYFISH_API_KEY = "test-only-credential";
     const requests: string[] = [];
-    globalThis.fetch = mock(async (_input, init) => {
+    globalThis.fetch = mock(async (_input: string | URL | Request, init?: RequestInit) => {
       requests.push(String(init?.body));
       return Response.json({ status: "COMPLETED", result: { summary: "Use dialogue with subtext.", sources: [] } });
     }) as typeof fetch;
