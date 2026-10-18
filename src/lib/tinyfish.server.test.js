@@ -1,4 +1,3 @@
-/// <reference types="bun" />
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { KEEPER_DAILY_LIMIT } from "./keeper";
 
@@ -22,10 +21,10 @@ describe("TinyFish public research boundaries", () => {
   test("sends only the abstract public topic, not private text, to TinyFish", async () => {
     process.env.TINYFISH_API_KEY = "test-only-credential";
     const requests: string[] = [];
-    globalThis.fetch = mock(async (_input: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = mock(async (_input, init) => {
       requests.push(String(init?.body));
       return Response.json({ status: "COMPLETED", result: { summary: "Use dialogue with subtext.", sources: [] } });
-    }) as typeof fetch;
+    });
     const result = await researchPublicWeb("Research dialogue techniques for my secret character Zorvathi.");
     expect(requests).toHaveLength(1);
     expect(requests[0]).toContain("fiction dialogue writing techniques");
@@ -35,20 +34,20 @@ describe("TinyFish public research boundaries", () => {
   test("ordinary story questions do not start a TinyFish run", async () => {
     plan = { research: false, topic: "" };
     const fetchMock = mock(async () => Response.json({}));
-    globalThis.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock;
     expect(await researchPublicWeb("Who is the main character?")).toBe("");
     expect(fetchMock).not.toHaveBeenCalled();
   });
   test("rejects links and credentials accidentally returned by the planner", async () => {
     plan = { research: true, topic: "https://private.example/?key=sk-secret" };
     const fetchMock = mock(async () => Response.json({}));
-    globalThis.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock;
     expect(await researchPublicWeb("Research this topic")).toBe("");
     expect(fetchMock).not.toHaveBeenCalled();
   });
   test("preserves provider status and redacts the credential from failure details", async () => {
     process.env.TINYFISH_API_KEY = "test-only-credential";
-    globalThis.fetch = mock(async () => new Response("Invalid test-only-credential", { status: 401 })) as typeof fetch;
+    globalThis.fetch = mock(async () => new Response("Invalid test-only-credential", { status: 401 }));
     try {
       await runPublicResearch("public writing craft");
       throw new Error("Expected provider failure");
@@ -61,7 +60,7 @@ describe("TinyFish public research boundaries", () => {
   });
   test("failed automation is not treated as successful research", async () => {
     process.env.TINYFISH_API_KEY = "test-only-credential";
-    globalThis.fetch = mock(async () => Response.json({ status: "FAILED", result: null, error: { message: "Task failed" } })) as typeof fetch;
+    globalThis.fetch = mock(async () => Response.json({ status: "FAILED", result: null, error: { message: "Task failed" } }));
     await expect(runPublicResearch("public writing craft")).rejects.toThrow("Task failed");
   });
 });
