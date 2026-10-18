@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
 import { WATCHER_CRAFT_KNOWLEDGE } from "@/lib/watcher-craft";
+import { researchPublicWeb, TinyFishError } from "@/lib/tinyfish.server";
 
 const requestSchema = z.object({
   messages: z.array(z.object({
@@ -132,11 +133,13 @@ export const Route = createFileRoute("/api/watcher/chat")({
               .join("\n\n");
           }
 
+          const webResearch = await researchPublicWeb(messages.at(-1)?.content ?? "", request.signal);
           const system = [
             basePrompt,
             `Your name is ${name}. Never break character.`,
             lore ? `# Additional Lore\n${lore}` : "",
             WATCHER_CRAFT_KNOWLEDGE,
+            webResearch,
             retrieved
               ? `# Retrieved knowledge (most relevant passages from the author's training library — prefer these when answering)\n${retrieved}`
               : "",
@@ -226,6 +229,7 @@ export const Route = createFileRoute("/api/watcher/chat")({
 
           return Response.json({ reply });
         } catch (e) {
+          if (e instanceof TinyFishError) return Response.json({ error: e.message, status: e.status }, { status: e.status >= 400 && e.status < 600 ? e.status : 502 });
           console.error("Watcher chat error", e);
           return new Response("The Watcher is silent.", { status: 500 });
         }
