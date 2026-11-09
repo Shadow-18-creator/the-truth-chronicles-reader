@@ -3,7 +3,14 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
-import { KEEPER_DAILY_LIMIT } from "@/lib/keeper";
+import {
+  getKeeperIpRateLimitKey,
+  isKeeperVisitorId,
+  KEEPER_ANONYMOUS_BURST_LIMIT,
+  KEEPER_DAILY_LIMIT,
+  KEEPER_IP_BURST_LIMIT,
+  KEEPER_IP_DAILY_LIMIT,
+} from "@/lib/keeper";
 import { researchPublicWeb, TinyFishError } from "@/lib/tinyfish.server";
 
 // The Keeper: the public, lighter companion. It only knows published chapter summaries,
@@ -25,39 +32,65 @@ export const Route = createFileRoute("/api/keeper/chat")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const authHeader = request.headers.get("authorization");
-          const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-          const url = process.env.SUPABASE_URL;
-          const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-          if (!token || !url || !publishableKey) return new Response("Sign in to talk with The Keeper.", { status: 401 });
-
-          const authClient = createClient<Database>(url, publishableKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } },
-            auth: { persistSession: false, autoRefreshToken: false },
-          });
-          const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-          const userId = claimsData?.claims?.sub;
-          if (claimsError || typeof userId !== "string" || !userId) {
-            return new Response("Sign in to talk with The Keeper.", { status: 401 });
+          let body: unknown;
+          try {
+            body = await request.json();
+          } catch {
+            return new Response("Invalid chat request.", { status: 400 });
           }
-
-          const parsed = requestSchema.safeParse(await request.json());
+          const parsed = requestSchema.safeParse(body);
           if (!parsed.success) return new Response("Invalid chat request.", { status: 400 });
           const { messages } = parsed.data;
           if (messages.at(-1)?.role !== "user") return new Response("A user message is required.", { status: 400 });
 
-          const burst = await checkRateLimit(userId, "keeper_chat_burst", 8, 1);
+          const url = process.env.SUPABASE_URL;
+          const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+          if (!url || !publishableKey) return new Response("The Keeper is unavailable.", { status: 503 });
+
+          const clientIp = request.headers.get("cf-connecting-ip");
+          const ipKey = await getKeeperIpRateLimitKey(clientIp);
+          const visitorHeader = request.headers.get("x-keeper-visitor");
+          const visitorKey = isKeeperVisitorId(visitorHeader)
+            ? `keeper_visitor_${visitorHeader.toLowerCase()}`
+            : ipKey ?? "keeper_unidentified";
+
+          if (ipKey) {
+            const ipBurst = await checkRateLimit(ipKey, "keeper_chat_ip_burst", KEEPER_IP_BURST_LIMIT, 1);
+            if (!ipBurst.allowed) return new Response("Too many messages from this network right now. Please try again shortly.", { status: 429 });
+            const ipDaily = await checkRateLimit(ipKey, "keeper_chat_ip_daily", KEEPER_IP_DAILY_LIMIT, 1440);
+            if (!ipDaily.allowed) return new Response("The Keeper is taking a quiet day for this network. Please try again tomorrow.", { status: 429 });
+          }
+
+          const burst = await checkRateLimit(visitorKey, "keeper_chat_burst", KEEPER_ANONYMOUS_BURST_LIMIT, 1);
           if (!burst.allowed) return new Response("The Keeper needs a breath — try again in a minute.", { status: 429 });
-          const daily = await checkRateLimit(userId, "keeper_chat_daily", KEEPER_DAILY_LIMIT, 1440);
+          const daily = await checkRateLimit(visitorKey, "keeper_chat_daily", KEEPER_DAILY_LIMIT, 1440);
           if (!daily.allowed) {
             return new Response(`You've used all ${KEEPER_DAILY_LIMIT} messages for today. The Keeper returns tomorrow.`, { status: 429 });
           }
 
-          const { data: chapters } = await authClient
+          const authClient = createClient<Database>(url, publishableKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: {
+              fetch: (input, init) => {
+                const headers = new Headers(init?.headers);
+                if (publishableKey.startsWith("sb_") && headers.get("Authorization") === `Bearer ${publishableKey}`) {
+                  headers.delete("Authorization");
+                }
+                headers.set("apikey", publishableKey);
+                return fetch(input, { ...init, headers });
+              },
+            },
+          });
+
+          const { data: chapters, error: chaptersError } = await authClient
             .from("chapters")
             .select("number, title, summary")
             .not("published_at", "is", null)
             .order("number", { ascending: true });
+          if (chaptersError) {
+            console.error("Keeper published-chapter read failed", chaptersError);
+            return new Response("The Keeper cannot reach the published pages right now.", { status: 503 });
+          }
           const corpus = (chapters ?? [])
             .map((c) => `Chapter ${c.number}: ${c.title}\n${c.summary ?? ""}`)
             .join("\n\n")

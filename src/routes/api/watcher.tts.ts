@@ -1,58 +1,53 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
-
-type Body = {
-  text?: string;
-  voiceId?: string;
-  elevenLabsKey?: string;
-};
+import { getKeeperIpRateLimitKey, isKeeperVisitorId, KEEPER_IP_BURST_LIMIT } from "@/lib/keeper";
+import { VOICES } from "@/lib/watcher-voices";
 
 const RATE_LIMIT = { limit: 10, windowMinutes: 1 };
+const keeperVoiceIds = new Set(VOICES.map((voice) => voice.id));
+const voiceRequestSchema = z.object({
+  text: z.string().trim().min(1).max(2500),
+  voiceId: z.string().refine((voiceId) => keeperVoiceIds.has(voiceId)),
+  elevenLabsKey: z.string().max(512).optional(),
+}).strict();
 
 export const Route = createFileRoute("/api/watcher/tts")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
-          const authHeader = request.headers.get("authorization");
-          if (!authHeader?.startsWith("Bearer ")) {
-            return new Response("Sign in to hear the Watcher's voice.", { status: 401 });
-          }
-
-          const token = authHeader.slice("Bearer ".length).trim();
-          const url = process.env.SUPABASE_URL;
-          const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-          if (!token || !url || !publishableKey) {
-            return new Response("Sign in to hear the Watcher's voice.", { status: 401 });
-          }
-
-          const authClient = createClient<Database>(url, publishableKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } },
-            auth: { persistSession: false, autoRefreshToken: false },
-          });
-          const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-          const userId = claimsData?.claims?.sub;
-          if (claimsError || typeof userId !== "string" || !userId) {
-            return new Response("Sign in to hear the Watcher's voice.", { status: 401 });
-          }
-
-          const body = (await request.json()) as Body;
-          const { text, voiceId, elevenLabsKey } = body;
-          if (typeof text !== "string" || !text.trim() || typeof voiceId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(voiceId)) {
+          let body: unknown;
+          try {
+            body = await request.json();
+          } catch {
             return new Response("A valid text and voice are required.", { status: 400 });
           }
+          const parsed = voiceRequestSchema.safeParse(body);
+          if (!parsed.success) return new Response("A valid text and voice are required.", { status: 400 });
+          const { text, voiceId, elevenLabsKey } = parsed.data;
 
-          const rate = await checkRateLimit(userId, "watcher_tts", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
+          const clientIp = request.headers.get("cf-connecting-ip");
+          const ipKey = await getKeeperIpRateLimitKey(clientIp);
+          if (ipKey) {
+            const ipRate = await checkRateLimit(ipKey, "keeper_voice_ip_burst", KEEPER_IP_BURST_LIMIT, 1);
+            if (!ipRate.allowed) return new Response("Too many spoken replies from this network. Please try again shortly.", { status: 429 });
+          }
+          const visitorHeader = request.headers.get("x-keeper-visitor");
+          const visitorKey = isKeeperVisitorId(visitorHeader)
+            ? `keeper_visitor_${visitorHeader.toLowerCase()}`
+            : ipKey ?? "keeper_unidentified";
+          const rate = await checkRateLimit(visitorKey, "keeper_voice_burst", RATE_LIMIT.limit, RATE_LIMIT.windowMinutes);
           if (!rate.allowed) {
-            return new Response("The Watcher's voice is tired — too many spoken words too quickly.", { status: 429 });
+            return new Response("The Keeper's voice needs a breath — try again in a minute.", { status: 429 });
           }
 
           const key = elevenLabsKey || process.env.ELEVENLABS_API_KEY;
           if (!key) return new Response("ElevenLabs not connected", { status: 500 });
 
-          const trimmed = text.trim().slice(0, 2500);
+          const trimmed = text.trim();
 
           const res = await fetch(
             `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,

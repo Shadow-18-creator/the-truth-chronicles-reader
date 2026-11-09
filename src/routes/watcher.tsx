@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicWatcherConfig } from "@/lib/watcher.functions";
-import { KEEPER_DAILY_LIMIT, KEEPER_NAME } from "@/lib/keeper";
+import { KEEPER_DAILY_LIMIT, KEEPER_NAME, isKeeperVisitorId } from "@/lib/keeper";
 
 export const Route = createFileRoute("/watcher")({
   head: () => ({
@@ -34,6 +33,19 @@ type Msg = { role: "user" | "assistant"; content: string };
 const AI_KEY_KEY = "watcher-ai-key";
 const AI_PROVIDER_KEY = "watcher-ai-provider";
 const ELEVEN_KEY_KEY = "watcher-elevenlabs-key";
+const KEEPER_VISITOR_KEY = "keeper-visitor-id";
+
+function getKeeperVisitorId() {
+  try {
+    const existing = localStorage.getItem(KEEPER_VISITOR_KEY);
+    if (isKeeperVisitorId(existing)) return existing;
+    const visitorId = crypto.randomUUID();
+    localStorage.setItem(KEEPER_VISITOR_KEY, visitorId);
+    return visitorId;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
 
 function WatcherPage() {
   const fetchPublicConfig = useServerFn(getPublicWatcherConfig);
@@ -114,15 +126,9 @@ function WatcherPage() {
     setMessages(next);
     setSending(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        toast.error("Sign in to talk with The Keeper.");
-        return;
-      }
       const res = await fetch("/api/keeper/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", "X-Keeper-Visitor": getKeeperVisitorId() },
         body: JSON.stringify({
           messages: next.slice(-20),
         }),
@@ -148,15 +154,9 @@ function WatcherPage() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeakingId(idx);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        toast.error("Sign in to hear The Keeper's voice.");
-        return;
-      }
       const res = await fetch("/api/watcher/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", "X-Keeper-Visitor": getKeeperVisitorId() },
         body: JSON.stringify({
           text,
           voiceId: activeVoice,
