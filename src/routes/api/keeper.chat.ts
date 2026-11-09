@@ -47,7 +47,7 @@ export const Route = createFileRoute("/api/keeper/chat")({
           const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
           if (!url || !publishableKey) return new Response("The Keeper is unavailable.", { status: 503 });
 
-          const clientIp = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0] ?? null;
+          const clientIp = request.headers.get("cf-connecting-ip");
           const ipKey = await getKeeperIpRateLimitKey(clientIp);
           const visitorHeader = request.headers.get("x-keeper-visitor");
           const visitorKey = isKeeperVisitorId(visitorHeader)

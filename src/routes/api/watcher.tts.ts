@@ -29,7 +29,7 @@ export const Route = createFileRoute("/api/watcher/tts")({
           if (!parsed.success) return new Response("A valid text and voice are required.", { status: 400 });
           const { text, voiceId, elevenLabsKey } = parsed.data;
 
-          const clientIp = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0] ?? null;
+          const clientIp = request.headers.get("cf-connecting-ip");
           const ipKey = await getKeeperIpRateLimitKey(clientIp);
           if (ipKey) {
             const ipRate = await checkRateLimit(ipKey, "keeper_voice_ip_burst", KEEPER_IP_BURST_LIMIT, 1);
