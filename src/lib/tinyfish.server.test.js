@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { KEEPER_DAILY_LIMIT } from "./keeper";
+import { getKeeperIpRateLimitKey, isKeeperVisitorId, KEEPER_DAILY_LIMIT, KEEPER_IP_BURST_LIMIT, KEEPER_IP_DAILY_LIMIT } from "./keeper";
 
 let plan = { research: true, topic: "fiction dialogue writing techniques" };
 const planner = mock(async () => ({ output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(plan) }] }] }));
@@ -17,6 +17,15 @@ afterEach(() => {
 describe("TinyFish public research boundaries", () => {
   test("Keeper retains 50 messages per reader per day", () => {
     expect(KEEPER_DAILY_LIMIT).toBe(50);
+  });
+  test("anonymous Keeper access keeps its visitor and network safeguards", async () => {
+    expect(KEEPER_IP_BURST_LIMIT).toBe(40);
+    expect(KEEPER_IP_DAILY_LIMIT).toBe(300);
+    expect(isKeeperVisitorId("87b330e9-dcb3-4a28-a74e-9ab6c4331234")).toBe(true);
+    expect(isKeeperVisitorId("not-a-visitor-id")).toBe(false);
+    const ipKey = await getKeeperIpRateLimitKey("203.0.113.42");
+    expect(ipKey).toMatch(/^keeper_ip_[0-9a-f]{64}$/);
+    expect(ipKey).not.toContain("203.0.113.42");
   });
   test("sends only the abstract public topic, not private text, to TinyFish", async () => {
     process.env.TINYFISH_API_KEY = "test-only-credential";
