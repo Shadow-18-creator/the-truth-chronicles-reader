@@ -154,7 +154,7 @@ function WatcherPage() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeakingId(idx);
     try {
-      const res = await fetch("/api/watcher/tts", {
+      const res = await fetch("/api/keeper/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Keeper-Visitor": getKeeperVisitorId() },
         body: JSON.stringify({
