@@ -168,7 +168,13 @@ export const Route = createFileRoute("/api/watcher/chat")({
               ]
             : system;
 
-          const recentMessages = messages.slice(-8);
+          // Request history is supplied by the browser and is therefore untrusted.
+          // Do not forward caller-selected roles (especially `assistant`) to a model;
+          // only the user's actual prompts are used as conversation context.
+          const recentMessages = messages
+            .filter((message) => message.role === "user")
+            .slice(-8)
+            .map((message) => ({ role: "user" as const, content: message.content }));
 
           // --- Use the reader's own key if provided, otherwise the site key ---
           let reply = "";
