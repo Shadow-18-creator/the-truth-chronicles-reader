@@ -28,9 +28,9 @@ export const Route = createFileRoute("/api/watcher/tts")({
             global: { headers: { Authorization: `Bearer ${token}` } },
             auth: { persistSession: false, autoRefreshToken: false },
           });
-          const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-          const userId = claimsData?.claims?.sub;
-          if (claimsError || typeof userId !== "string" || !userId) return new Response("Sign in to hear the Watcher's voice.", { status: 401 });
+          const { data: userData, error: userError } = await authClient.auth.getUser(token);
+          const userId = userData?.user?.id;
+          if (userError || typeof userId !== "string" || !userId) return new Response("Sign in to hear the Watcher's voice.", { status: 401 });
 
           const body = (await request.json()) as Body;
           const { text, voiceId, elevenLabsKey } = body;

@@ -24,9 +24,9 @@ export const Route = createFileRoute("/api/profile/avatar")({
             global: { headers: { Authorization: `Bearer ${token}` } },
             auth: { persistSession: false, autoRefreshToken: false },
           });
-          const { data: claims, error: claimsError } = await supabase.auth.getClaims(token);
-          const userId = claims?.claims?.sub;
-          if (claimsError || !userId) return new Response("Your session has expired. Please sign in again.", { status: 401 });
+          const { data: userData, error: userError } = await supabase.auth.getUser(token);
+          const userId = userData?.user?.id;
+          if (userError || !userId) return new Response("Your session has expired. Please sign in again.", { status: 401 });
 
            const dailyRate = await checkRateLimit(userId, "profile_avatar_generation_daily", DAILY_RATE_LIMIT.limit, DAILY_RATE_LIMIT.windowMinutes);
            if (!dailyRate.allowed) return new Response("You have reached today’s portrait limit of 12. Try again tomorrow.", { status: 429 });
