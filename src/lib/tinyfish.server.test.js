@@ -4,7 +4,7 @@ import { getKeeperIpRateLimitKey, isKeeperVisitorId, KEEPER_DAILY_LIMIT, KEEPER_
 let plan = { research: true, topic: "fiction dialogue writing techniques" };
 const planner = mock(async () => ({ output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(plan) }] }] }));
 mock.module("@lovable.dev/ai-gateway", () => ({ generateResponse: planner }));
-const { researchPublicWeb, runPublicResearch, TinyFishError } = await import("./tinyfish.server");
+const { researchPublicWeb, researchForWatcher, runPublicResearch, TinyFishError } = await import("./tinyfish.server");
 const originalFetch = globalThis.fetch;
 const originalKey = process.env.TINYFISH_API_KEY;
 afterEach(() => {
@@ -46,6 +46,18 @@ describe("TinyFish public research boundaries", () => {
     globalThis.fetch = fetchMock;
     expect(await researchPublicWeb("Who is the main character?")).toBe("");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+  test("polish and lore-check requests skip optional web research", async () => {
+    const fetchMock = mock(async () => Response.json({}));
+    globalThis.fetch = fetchMock;
+    expect(await researchForWatcher("polish", "Polish my draft.")).toBe("");
+    expect(await researchForWatcher("consistency", "Check my draft against the lore.")).toBe("");
+    expect(planner).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  test("a failed optional research plan does not block Watcher replies", async () => {
+    planner.mockRejectedValueOnce(new Error("research unavailable"));
+    expect(await researchForWatcher("chat", "Hello")).toBe("");
   });
   test("rejects links and credentials accidentally returned by the planner", async () => {
     plan = { research: true, topic: "https://private.example/?key=sk-secret" };

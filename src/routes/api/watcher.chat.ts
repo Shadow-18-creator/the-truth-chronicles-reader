@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { checkRateLimit } from "@/lib/rate-limit.server";
 import { WATCHER_CRAFT_KNOWLEDGE } from "@/lib/watcher-craft";
-import { researchPublicWeb, TinyFishError } from "@/lib/tinyfish.server";
+import { researchForWatcher, TinyFishError } from "@/lib/tinyfish.server";
 
 const requestSchema = z.object({
   messages: z.array(z.object({
@@ -133,7 +133,7 @@ export const Route = createFileRoute("/api/watcher/chat")({
               .join("\n\n");
           }
 
-          const webResearch = await researchPublicWeb(messages.at(-1)?.content ?? "", request.signal);
+          const webResearch = await researchForWatcher(body.mode, messages.at(-1)?.content ?? "", request.signal);
           const system = [
             basePrompt,
             `Your name is ${name}. Never break character.`,
