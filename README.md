@@ -1,5 +1,32 @@
-The  project is based on a multi purpose novel  hosting platform and it enables the author to have a community of readers that can interaact with the story through many forms and the platform also enables the author to organise their world lore and two rag agents are implemented on the  platform watcher holds the  lore data of story and helps author draft the story better and keeper interacts with the readers and answers to their questions related to the lore based on the no. of chapters they have read to keep it spoiler free then there is integration of  elven labs api key which give the rag ai voice   also there is real time translation of chapters available in more than 45 languages   and chapter specific chat rooms, chapter bookmark features  profile making feature and few more such options fully functional.
-also, there is o/auth  setup enabled in the code so only my private gmail has the admin controls and features like  rag agent training and  lore maintainence are not enabled for common readers and for normal readers only keeper is enabled not the watcher.
-My vision is to expand this framework in the form of a multi tenant architecture form  where each other is an admin of there room and each room resembles the  current structure of the platform all packed together in the form of a  bigger reader platform
-For countering the cloud server and database issues i plan on utilising the author genearted ids, to host  smaller databases  handling their own room and ai agent apis
-for moneuy earning i plan on gamifying the platform and introduce token currency in the platform for unlocking advance chapters before release time and for interacting with the rag agents and more and readers can also buy more tokens with real currency and with daily logins and  engagement metrics  and my platform recieves cuts of the token charges and and a part of those transaction goes to  the authors
+# The Boy Who Saw The Truth
+
+A serialized-novel reading community with chapter discussions, bookmarks, translations, reader profiles, and two story companions. The Keeper is available to readers and uses published-story context; the Watcher is reserved for the author and supports drafting against private lore.
+
+## Architecture
+
+- **Web app:** React 19 and TanStack Start/Router, with TypeScript and Vite.
+- **Data and identity:** Lovable Cloud, backed by a database and authentication; access rules separate public reading from author-only lore and training.
+- **AI and voice:** server-side AI and public-web research integrations; optional ElevenLabs voice for The Keeper.
+- **Tests:** Vitest runs unit tests, while React Testing Library exercises UI interactions in jsdom. External APIs and auth are mocked so tests do not require live credentials.
+
+## Install
+
+```sh
+npm install
+```
+
+## Testing
+
+Run the complete automated suite:
+
+```sh
+npm test
+```
+
+Tests live in `src/__tests__/`. They cover shared formatting and policy helpers, Watcher prompt/request handling, the optional public research boundary, and representative Scriptorium interactions and API states.
+
+## Development
+
+```sh
+npm run dev
+```
