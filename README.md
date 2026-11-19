@@ -1,13 +1,47 @@
 # The Boy Who Saw The Truth
 
-A serialized-novel reading community with chapter discussions, bookmarks, translations, reader profiles, and two story companions. The Keeper is available to readers and uses published-story context; the Watcher is reserved for the author and supports drafting against private lore.
+An AI-powered storytelling ecosystem that enables readers to explore serialized novels while helping authors build, manage, and monetize story universes.
 
-## Architecture
+## Core Concept
 
-- **Web app:** React 19 and TanStack Start/Router, with TypeScript and Vite.
-- **Data and identity:** Lovable Cloud, backed by a database and authentication; access rules separate public reading from author-only lore and training.
-- **AI and voice:** server-side AI and public-web research integrations; optional ElevenLabs voice for The Keeper.
-- **Tests:** Vitest runs unit tests, while React Testing Library exercises UI interactions in jsdom. External APIs and auth are mocked so tests do not require live credentials.
+The platform introduces two specialized AI companions:
+
+### The Keeper (Reader AI)
+- Answers story-related questions
+- Uses only chapters already read by the user
+- Prevents spoilers through progression-aware retrieval
+- Supports summaries, explanations, and story exploration
+
+### The Watcher (Author AI)
+- Private author-only knowledge companion
+- Trained using lore documents, character profiles, timelines, research, URLs, and images
+- Assists with world-building, drafting, and story consistency
+
+## Key Innovation
+
+```text
+Reader → Keeper → Published Story Context
+
+Author → Watcher → Private Lore Knowledge Base
+```
+
+This role-based knowledge separation allows spoiler-safe reader interactions while giving authors a dedicated AI workspace.
+
+## Tech Stack
+
+- React 19
+- TypeScript
+- Vite
+- TanStack Router
+- Lovable Cloud
+- Retrieval-Augmented Generation (RAG)
+- ElevenLabs Voice (Optional)
+- Vitest & React Testing Library
+
+## Vision
+
+Transform static novels into interactive story universes where readers engage with AI-powered companions and authors manage intelligent knowledge systems around their content.
+
 
 ## Install
 
