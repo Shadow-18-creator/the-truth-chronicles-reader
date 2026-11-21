@@ -237,7 +237,10 @@ function WatcherPage() {
       <header className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/40 bg-primary/5 text-xs text-primary font-sans mb-3">
           <Sparkles className="h-3.5 w-3.5" />
-          <span>Anti-Spoiler Active &bull; Keeper attuned through Chapter {highestUnlocked}</span>
+          <span>Anti-Spoiler Active &bull; Attuned through Chapter {highestUnlocked}</span>
+          <Link to="/chapters" className="underline opacity-80 hover:opacity-100 ml-1">
+            Read next chapter →
+          </Link>
         </div>
         <p className="text-primary text-xs font-sans tracking-[0.3em] uppercase mb-3">Beyond the Veil</p>
         <div className="flex flex-col items-center gap-4">

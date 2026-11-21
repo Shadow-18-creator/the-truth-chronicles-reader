@@ -190,15 +190,17 @@ function ChapterPage() {
   const [hasScrolledPast80, setHasScrolledPast80] = useState(false);
   const [unlockedNotified, setUnlockedNotified] = useState(false);
 
-  // 1. Scroll depth tracking (> 80%)
+  // 1. Scroll depth tracking (> 80% or content fits on single screen)
   useEffect(() => {
     const handleScroll = () => {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (scrollHeight > 0) {
-        const scrolled = window.scrollY / scrollHeight;
-        if (scrolled >= 0.8) {
-          setHasScrolledPast80(true);
-        }
+      if (scrollHeight <= 0) {
+        setHasScrolledPast80(true);
+        return;
+      }
+      const scrolled = window.scrollY / scrollHeight;
+      if (scrolled >= 0.8) {
+        setHasScrolledPast80(true);
       }
     };
 
@@ -220,34 +222,44 @@ function ChapterPage() {
     return () => clearInterval(interval);
   }, [user, chapter]);
 
-  // 3. Unlock trigger: Active time >= 90s AND scrolled past 80%
+  const inscribeChapter = async () => {
+    if (!user || !chapter) return;
+    const currentHighest = readerProgress?.highest_unlocked_chapter ?? 0;
+    if (chapter.number > currentHighest) {
+      const { error } = await supabase
+        .from("reader_progress")
+        .upsert({
+          user_id: user.id,
+          highest_unlocked_chapter: chapter.number,
+          last_read_chapter_id: chapter.id,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+
+      if (!error) {
+        qc.invalidateQueries({ queryKey: ["reader-progress", user.id] });
+        toast.success(`✦ Chapter ${chapter.number} inscribed into The Keeper's memory!`, {
+          description: "The Keeper is now attuned to discuss this chapter with you without spoilers.",
+          duration: 5000,
+        });
+      }
+    }
+  };
+
+  // 3. Unlock trigger: Active time >= 30s (or scaled for short text) AND scrolled past 80%
+  const wordCount = (chapter?.content || "").trim().split(/\s+/).filter(Boolean).length;
+  const dwellTarget = Math.min(90, Math.max(10, Math.ceil(wordCount / 3)));
+
   useEffect(() => {
     if (!user || !chapter || unlockedNotified) return;
 
-    if (activeSeconds >= 90 && hasScrolledPast80) {
+    if (activeSeconds >= dwellTarget && hasScrolledPast80) {
       const currentHighest = readerProgress?.highest_unlocked_chapter ?? 0;
       if (chapter.number > currentHighest) {
         setUnlockedNotified(true);
-        void supabase
-          .from("reader_progress")
-          .upsert({
-            user_id: user.id,
-            highest_unlocked_chapter: chapter.number,
-            last_read_chapter_id: chapter.id,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" })
-          .then(({ error }) => {
-            if (!error) {
-              qc.invalidateQueries({ queryKey: ["reader-progress", user.id] });
-              toast.success(`✦ Chapter ${chapter.number} inscribed into The Keeper's memory!`, {
-                description: "The Keeper is now attuned to discuss this chapter with you without spoilers.",
-                duration: 5000,
-              });
-            }
-          });
+        void inscribeChapter();
       }
     }
-  }, [activeSeconds, hasScrolledPast80, user, chapter, readerProgress, unlockedNotified, qc]);
+  }, [activeSeconds, dwellTarget, hasScrolledPast80, user, chapter, readerProgress, unlockedNotified]);
 
   const [commentText, setCommentText] = useState("");
   const [languageCode, setLanguageCode] = useState("en");
@@ -355,19 +367,46 @@ function ChapterPage() {
         <p className="font-sans text-xs tracking-[0.4em] uppercase text-primary mb-4">Chapter {chapter.number}</p>
         <h1 className="font-display text-4xl md:text-6xl text-glow mb-6">{displayTitle}</h1>
         {displaySummary && <p className="font-body italic text-muted-foreground text-lg max-w-xl mx-auto">{displaySummary}</p>}
-        {user && (
-          <div className="mt-5 flex items-center justify-center">
-            {chapter.number <= (readerProgress?.highest_unlocked_chapter ?? 0) ? (
-              <Badge variant="outline" className="border-primary/40 text-primary text-xs py-1 px-3 bg-primary/5 font-sans">
-                ✦ Inscribed in The Keeper's Memory
-              </Badge>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {user ? (
+            chapter.number <= (readerProgress?.highest_unlocked_chapter ?? 0) ? (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="border-primary/40 text-primary text-xs py-1 px-3 bg-primary/5 font-sans">
+                  ✦ Inscribed in The Keeper's Memory
+                </Badge>
+                <Link
+                  to="/watcher"
+                  className="inline-flex items-center gap-1 text-xs text-primary/80 hover:text-primary underline font-sans"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Converse with The Keeper →
+                </Link>
+              </div>
             ) : (
-              <Badge variant="outline" className="border-border text-muted-foreground text-xs py-1 px-3 bg-muted/40 font-sans">
-                Reading Chapter: Active dwell {Math.min(90, activeSeconds)}s / 90s {hasScrolledPast80 ? "• Scrolled" : ""}
-              </Badge>
-            )}
-          </div>
-        )}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Badge variant="outline" className="border-border text-muted-foreground text-xs py-1 px-3 bg-muted/40 font-sans">
+                  Reading Chapter: {Math.min(dwellTarget, activeSeconds)}s / {dwellTarget}s {hasScrolledPast80 ? "• Scrolled" : ""}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-primary/50 text-primary hover:bg-primary/10"
+                  onClick={() => void inscribeChapter()}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Inscribe to Keeper Now
+                </Button>
+              </div>
+            )
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Sign in to unlock The Keeper's memory for this chapter:</span>
+              <Link to="/auth" className="text-primary hover:underline font-medium">
+                Sign In →
+              </Link>
+            </div>
+          )}
+        </div>
         <section className="mx-auto mt-8 max-w-xl border border-primary/30 bg-card/50 p-5 text-left shadow-arcane" aria-labelledby="chapter-translation-heading">
           <div className="mb-4 flex items-start gap-3">
             <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border border-primary/40 bg-primary/10 text-primary">
