@@ -38,6 +38,30 @@ export type Database = {
         }
         Relationships: []
       }
+      reader_progress: {
+        Row: {
+          user_id: string
+          highest_unlocked_chapter: number
+          last_read_chapter_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          highest_unlocked_chapter?: number
+          last_read_chapter_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          highest_unlocked_chapter?: number
+          last_read_chapter_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chapter_bookmarks: {
         Row: {
           chapter_id: string

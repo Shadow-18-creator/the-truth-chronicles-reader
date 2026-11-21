@@ -172,6 +172,83 @@ function ChapterPage() {
     },
   });
 
+  const { data: readerProgress } = useQuery({
+    queryKey: ["reader-progress", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("reader_progress")
+        .select("highest_unlocked_chapter")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  // Hybrid Engagement Tracker: Active reading dwell time + Scroll depth (>80%)
+  const [activeSeconds, setActiveSeconds] = useState(0);
+  const [hasScrolledPast80, setHasScrolledPast80] = useState(false);
+  const [unlockedNotified, setUnlockedNotified] = useState(false);
+
+  // 1. Scroll depth tracking (> 80%)
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight > 0) {
+        const scrolled = window.scrollY / scrollHeight;
+        if (scrolled >= 0.8) {
+          setHasScrolledPast80(true);
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // 2. Active dwell time tracking (seconds when tab is visible and focused)
+  useEffect(() => {
+    if (!user || !chapter) return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        setActiveSeconds((prev) => prev + 1);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [user, chapter]);
+
+  // 3. Unlock trigger: Active time >= 90s AND scrolled past 80%
+  useEffect(() => {
+    if (!user || !chapter || unlockedNotified) return;
+
+    if (activeSeconds >= 90 && hasScrolledPast80) {
+      const currentHighest = readerProgress?.highest_unlocked_chapter ?? 0;
+      if (chapter.number > currentHighest) {
+        setUnlockedNotified(true);
+        void supabase
+          .from("reader_progress")
+          .upsert({
+            user_id: user.id,
+            highest_unlocked_chapter: chapter.number,
+            last_read_chapter_id: chapter.id,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" })
+          .then(({ error }) => {
+            if (!error) {
+              qc.invalidateQueries({ queryKey: ["reader-progress", user.id] });
+              toast.success(`✦ Chapter ${chapter.number} inscribed into The Keeper's memory!`, {
+                description: "The Keeper is now attuned to discuss this chapter with you without spoilers.",
+                duration: 5000,
+              });
+            }
+          });
+      }
+    }
+  }, [activeSeconds, hasScrolledPast80, user, chapter, readerProgress, unlockedNotified, qc]);
+
   const [commentText, setCommentText] = useState("");
   const [languageCode, setLanguageCode] = useState("en");
   const [pendingLanguageCode, setPendingLanguageCode] = useState("en");
@@ -278,6 +355,19 @@ function ChapterPage() {
         <p className="font-sans text-xs tracking-[0.4em] uppercase text-primary mb-4">Chapter {chapter.number}</p>
         <h1 className="font-display text-4xl md:text-6xl text-glow mb-6">{displayTitle}</h1>
         {displaySummary && <p className="font-body italic text-muted-foreground text-lg max-w-xl mx-auto">{displaySummary}</p>}
+        {user && (
+          <div className="mt-5 flex items-center justify-center">
+            {chapter.number <= (readerProgress?.highest_unlocked_chapter ?? 0) ? (
+              <Badge variant="outline" className="border-primary/40 text-primary text-xs py-1 px-3 bg-primary/5 font-sans">
+                ✦ Inscribed in The Keeper's Memory
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="border-border text-muted-foreground text-xs py-1 px-3 bg-muted/40 font-sans">
+                Reading Chapter: Active dwell {Math.min(90, activeSeconds)}s / 90s {hasScrolledPast80 ? "• Scrolled" : ""}
+              </Badge>
+            )}
+          </div>
+        )}
         <section className="mx-auto mt-8 max-w-xl border border-primary/30 bg-card/50 p-5 text-left shadow-arcane" aria-labelledby="chapter-translation-heading">
           <div className="mb-4 flex items-start gap-3">
             <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border border-primary/40 bg-primary/10 text-primary">

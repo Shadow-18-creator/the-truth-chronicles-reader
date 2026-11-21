@@ -1,9 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, Send, Volume2, Loader2, KeyRound, X } from "lucide-react";
+import { Eye, Send, Volume2, Loader2, KeyRound, X, Sparkles, Lock, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { VOICES, VOICE_PREF_KEY } from "@/lib/watcher-voices";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,11 +50,27 @@ function getKeeperVisitorId() {
 }
 
 function WatcherPage() {
+  const { user, session, loading: authLoading } = useAuth();
   const fetchPublicConfig = useServerFn(getPublicWatcherConfig);
   const { data: cfg } = useQuery({
     queryKey: ["watcher-config-public"],
     queryFn: () => fetchPublicConfig(),
   });
+
+  const { data: readerProgress } = useQuery({
+    queryKey: ["reader-progress", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("reader_progress")
+        .select("highest_unlocked_chapter")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const highestUnlocked = readerProgress?.highest_unlocked_chapter ?? 1;
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -126,9 +144,13 @@ function WatcherPage() {
     setMessages(next);
     setSending(true);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
       const res = await fetch("/api/keeper/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Keeper-Visitor": getKeeperVisitorId() },
+        headers,
         body: JSON.stringify({
           messages: next.slice(-20),
         }),
@@ -154,9 +176,13 @@ function WatcherPage() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeakingId(idx);
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
       const res = await fetch("/api/keeper/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Keeper-Visitor": getKeeperVisitorId() },
+        headers,
         body: JSON.stringify({
           text,
           voiceId: activeVoice,
@@ -178,9 +204,41 @@ function WatcherPage() {
 
   const name = KEEPER_NAME;
 
+  if (!authLoading && !user) {
+    return (
+      <div className="container mx-auto max-w-lg px-4 py-24 text-center">
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary mb-6 glow-gold">
+          <Eye className="h-10 w-10 animate-pulse" />
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/40 bg-primary/5 text-primary text-xs uppercase tracking-widest font-sans mb-4">
+          <Lock className="h-3.5 w-3.5" />
+          <span>Seeker Authentication Required</span>
+        </div>
+        <h1 className="font-display text-4xl font-bold text-glow mb-4">
+          The Keeper is Asleep
+        </h1>
+        <p className="font-body text-lg italic text-muted-foreground mb-8 leading-relaxed max-w-md mx-auto">
+          "The Keeper speaks only with recorded Seekers, tuning its memory to your personal reading journey so that no future spoilers pierce the veil."
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button asChild size="lg" className="bg-gold-gradient text-gold-foreground font-semibold px-8 shadow-lg">
+            <Link to="/auth">Sign In to Awaken The Keeper</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="border-border hover:bg-card">
+            <Link to="/chapters">Browse Chapters as Guest</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <header className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/40 bg-primary/5 text-xs text-primary font-sans mb-3">
+          <Sparkles className="h-3.5 w-3.5" />
+          <span>Anti-Spoiler Active &bull; Keeper attuned through Chapter {highestUnlocked}</span>
+        </div>
         <p className="text-primary text-xs font-sans tracking-[0.3em] uppercase mb-3">Beyond the Veil</p>
         <div className="flex flex-col items-center gap-4">
           {cfg?.avatar_url ? (
