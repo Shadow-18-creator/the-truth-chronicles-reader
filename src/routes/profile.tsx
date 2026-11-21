@@ -10,6 +10,7 @@ import { MessageCircle, Star, Heart, ShieldCheck, Camera, Sparkles, WandSparkles
 import { toast } from "sonner";
 import { AVATAR_STYLES, SeekerAvatar, type AvatarStyle } from "@/components/SeekerAvatar";
 import { streamImage } from "@/lib/stream-image";
+import { persistProfileAvatar } from "@/lib/profile-avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -134,22 +135,32 @@ function ProfilePage() {
       return false;
     }
     setUploading(true);
-    const path = `${user.id}/avatar-${Date.now()}.${extension}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: blob.type });
-    if (upErr) {
-      setUploading(false);
-      toast.error(upErr.message.includes("row-level security") ? "Your portrait could not be saved. Please sign in again and try once more." : upErr.message);
-      return false;
-    }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
+    const result = await persistProfileAvatar(user.id, blob, extension, {
+      upload: (path, image, contentType) => supabase.storage.from("avatars").upload(path, image, { upsert: true, contentType }),
+      getPublicUrl: (path) => supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl,
+      updateProfileAvatar: (userId, avatarUrl) => supabase
+        .from("profiles")
+        .update({ avatar_url: avatarUrl })
+        .eq("id", userId)
+        .select("avatar_url")
+        .maybeSingle(),
+      remove: async (path) => { await supabase.storage.from("avatars").remove([path]); },
+    });
     setUploading(false);
-    if (dbErr) {
-      toast.error(dbErr.message.includes("row-level security") ? "Your profile could not be updated. Please sign in again and try once more." : dbErr.message);
+    if (!result.ok) {
+      const message = result.message.includes("row-level security")
+        ? "Your portrait could not be saved. Please sign in again and try once more."
+        : result.message;
+      toast.error(message);
       return false;
     }
+
     toast.success("Portrait updated.");
+    qc.setQueryData(["profile", user.id], (current: typeof profile) => current ? { ...current, avatar_url: result.avatarUrl } : current);
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    qc.invalidateQueries({ queryKey: ["header-profile", user.id] });
+    qc.invalidateQueries({ queryKey: ["profile-by-username"] });
+    qc.invalidateQueries({ queryKey: ["users-search"] });
     return true;
   };
 
