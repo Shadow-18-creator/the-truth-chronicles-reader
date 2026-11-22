@@ -136,15 +136,18 @@ function ProfilePage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      await uploadAvatarImage({
+      const avatarUrl = await uploadAvatarImage({
         file,
         target: "profile",
         token,
         userId: user.id,
       });
       toast.success("Portrait updated.");
+      qc.setQueryData(["profile", user.id], (current: typeof profile) => current ? { ...current, avatar_url: avatarUrl } : current);
       qc.invalidateQueries({ queryKey: ["profile", user.id] });
+      qc.invalidateQueries({ queryKey: ["header-profile", user.id] });
       qc.invalidateQueries({ queryKey: ["profile-by-username"] });
+      qc.invalidateQueries({ queryKey: ["users-search"] });
     } catch (err) {
       console.error("Profile upload error:", err);
       toast.error(err instanceof Error ? err.message : "Your portrait could not be saved.");

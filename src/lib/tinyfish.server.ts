@@ -12,6 +12,20 @@ export class TinyFishError extends Error {
   }
 }
 
+export async function researchForWatcher(
+  mode: "chat" | "polish" | "consistency" | undefined,
+  question: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  if (mode && mode !== "chat") return "";
+  try {
+    return await researchPublicWeb(question, signal);
+  } catch (error) {
+    console.error("Optional Watcher web research unavailable", error);
+    return "";
+  }
+}
+
 // This boundary deliberately accepts no draft, lore, notebook, images or chat history.
 export async function researchPublicWeb(question: string, signal?: AbortSignal): Promise<string> {
   const planResponse = await generateResponse({
