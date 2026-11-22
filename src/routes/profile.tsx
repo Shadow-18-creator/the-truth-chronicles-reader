@@ -10,6 +10,7 @@ import { MessageCircle, Star, Heart, ShieldCheck, Camera, Sparkles, WandSparkles
 import { toast } from "sonner";
 import { AVATAR_STYLES, SeekerAvatar, type AvatarStyle } from "@/components/SeekerAvatar";
 import { streamImage } from "@/lib/stream-image";
+import { uploadAvatarImage } from "@/lib/avatar-upload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -127,50 +128,29 @@ function ProfilePage() {
     location.reload();
   };
 
-  const saveAvatarBlob = async (blob: Blob, extension: string) => {
-    if (!user) return false;
-    if (blob.size > 10 * 1024 * 1024) {
-      toast.error("Portraits must be under 10MB.");
-      return false;
-    }
-    setUploading(true);
-    const path = `${user.id}/avatar-${Date.now()}.${extension}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: blob.type });
-    if (upErr) {
-      setUploading(false);
-      toast.error(upErr.message.includes("row-level security") ? "Your portrait could not be saved. Please sign in again and try once more." : upErr.message);
-      return false;
-    }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
-    setUploading(false);
-    if (dbErr) {
-      toast.error(dbErr.message.includes("row-level security") ? "Your profile could not be updated. Please sign in again and try once more." : dbErr.message);
-      return false;
-    }
-    toast.success("Portrait updated.");
-    qc.invalidateQueries({ queryKey: ["profile", user.id] });
-    return true;
-  };
-
   const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB."); return; }
-    const ALLOWED = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
-    const ALLOWED_EXT: Record<string, "jpg" | "png" | "gif" | "webp"> = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" };
-    if (!ALLOWED.includes(file.type as any)) {
-      toast.error("Only JPG, PNG, GIF, or WebP images are allowed.");
-      return;
+    e.target.value = ""; // Reset input so selecting the same file triggers onChange
+    setUploading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      await uploadAvatarImage({
+        file,
+        target: "profile",
+        token,
+        userId: user.id,
+      });
+      toast.success("Portrait updated.");
+      qc.invalidateQueries({ queryKey: ["profile", user.id] });
+      qc.invalidateQueries({ queryKey: ["profile-by-username"] });
+    } catch (err) {
+      console.error("Profile upload error:", err);
+      toast.error(err instanceof Error ? err.message : "Your portrait could not be saved.");
+    } finally {
+      setUploading(false);
     }
-    const nameExt = file.name.split(".").pop()?.toLowerCase() || "";
-    if (nameExt === "svg" || file.type === "image/svg+xml") {
-      toast.error("SVG images are not allowed.");
-      return;
-    }
-    const ext = ALLOWED_EXT[file.type];
-    if (!ext) return;
-    await saveAvatarBlob(file, ext);
   };
 
   const generateAvatar = async () => {
@@ -201,14 +181,31 @@ function ProfilePage() {
   };
 
   const useGeneratedAvatar = async () => {
-    if (!generatedAvatar || !generatedAvatarFinal) return;
-    const blob = await fetch(generatedAvatar).then((response) => response.blob());
-    const saved = await saveAvatarBlob(blob, "png");
-    if (saved) {
+    if (!generatedAvatar || !generatedAvatarFinal || !user) return;
+    setUploading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch(generatedAvatar);
+      const blob = await res.blob();
+      const file = new File([blob], `ai-portrait-${Date.now()}.png`, { type: "image/png" });
+      await uploadAvatarImage({
+        file,
+        target: "profile",
+        token,
+        userId: user.id,
+      });
+      toast.success("Portrait updated.");
+      qc.invalidateQueries({ queryKey: ["profile", user.id] });
       setAiOpen(false);
       setGeneratedAvatar(null);
       setAiPrompt("");
       setAvatarError(null);
+    } catch (err) {
+      console.error("AI portrait save error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to save AI portrait.");
+    } finally {
+      setUploading(false);
     }
   };
 

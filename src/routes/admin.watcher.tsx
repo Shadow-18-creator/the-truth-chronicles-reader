@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { VOICES } from "@/lib/watcher-voices";
+import { uploadAvatarImage } from "@/lib/avatar-upload";
 import { Eye, Upload, ArrowLeft, X, ImagePlus, Sparkles, Save, Database, Volume2, Link as LinkIcon, History, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/admin/watcher")({
@@ -165,21 +166,23 @@ function AdminWatcher() {
   };
 
   const uploadAvatar = async (file: File) => {
-    if (!ALLOWED.has(file.type)) { toast.error("Use JPG, PNG, or WebP."); return; }
-    if (file.size > 4 * 1024 * 1024) { toast.error("Max 4 MB."); return; }
     setUploading(true);
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `watcher/avatar-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
-    if (upErr) { toast.error(upErr.message); setUploading(false); return; }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error } = await supabase.from("watcher_config").update({ avatar_url: pub.publicUrl }).eq("id", true);
-    setUploading(false);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      await uploadAvatarImage({
+        file,
+        target: "watcher",
+        token,
+      });
       toast.success("New avatar saved for the Watcher.");
       refetch();
       qc.invalidateQueries({ queryKey: ["watcher-config-public"] });
+    } catch (err) {
+      console.error("Watcher avatar upload error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to upload Watcher avatar.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -312,7 +315,11 @@ function AdminWatcher() {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) uploadAvatar(f);
+              }}
             />
           </label>
         </div>

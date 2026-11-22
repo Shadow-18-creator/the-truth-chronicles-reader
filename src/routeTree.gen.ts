@@ -32,6 +32,7 @@ import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiAvatarUploadRouteImport } from './routes/api/avatar.upload'
 import { Route as ApiKeeperChatRouteImport } from './routes/api/keeper.chat'
 import { Route as ApiKeeperTtsRouteImport } from './routes/api/keeper.tts'
 import { Route as ApiProfileAvatarRouteImport } from './routes/api/profile/avatar'
@@ -157,6 +158,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAvatarUploadRoute = ApiAvatarUploadRouteImport.update({
+  id: '/api/avatar/upload',
+  path: '/api/avatar/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiKeeperChatRoute = ApiKeeperChatRouteImport.update({
   id: '/api/keeper/chat',
   path: '/api/keeper/chat',
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/chapters/': typeof ChaptersIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/avatar/upload': typeof ApiAvatarUploadRoute
   '/api/keeper/chat': typeof ApiKeeperChatRoute
   '/api/keeper/tts': typeof ApiKeeperTtsRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/chapters': typeof ChaptersIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/avatar/upload': typeof ApiAvatarUploadRoute
   '/api/keeper/chat': typeof ApiKeeperChatRoute
   '/api/keeper/tts': typeof ApiKeeperTtsRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/chapters/': typeof ChaptersIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/avatar/upload': typeof ApiAvatarUploadRoute
   '/api/keeper/chat': typeof ApiKeeperChatRoute
   '/api/keeper/tts': typeof ApiKeeperTtsRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/chapters/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/avatar/upload'
     | '/api/keeper/chat'
     | '/api/keeper/tts'
     | '/api/profile/avatar'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/chapters'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/avatar/upload'
     | '/api/keeper/chat'
     | '/api/keeper/tts'
     | '/api/profile/avatar'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/chapters/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/avatar/upload'
     | '/api/keeper/chat'
     | '/api/keeper/tts'
     | '/api/profile/avatar'
@@ -391,6 +403,7 @@ export interface RootRouteChildren {
   UUsernameRoute: typeof UUsernameRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiAvatarUploadRoute: typeof ApiAvatarUploadRoute
   ApiKeeperChatRoute: typeof ApiKeeperChatRoute
   ApiKeeperTtsRoute: typeof ApiKeeperTtsRoute
   ApiProfileAvatarRoute: typeof ApiProfileAvatarRoute
@@ -562,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/avatar/upload': {
+      id: '/api/avatar/upload'
+      path: '/api/avatar/upload'
+      fullPath: '/api/avatar/upload'
+      preLoaderRoute: typeof ApiAvatarUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/keeper/chat': {
       id: '/api/keeper/chat'
       path: '/api/keeper/chat'
@@ -665,6 +685,7 @@ const rootRouteChildren: RootRouteChildren = {
   UUsernameRoute: UUsernameRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiAvatarUploadRoute: ApiAvatarUploadRoute,
   ApiKeeperChatRoute: ApiKeeperChatRoute,
   ApiKeeperTtsRoute: ApiKeeperTtsRoute,
   ApiProfileAvatarRoute: ApiProfileAvatarRoute,
