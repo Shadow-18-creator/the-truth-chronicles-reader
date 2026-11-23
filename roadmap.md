@@ -15,3 +15,7 @@
 - [ ] Trace upload, profile database update, and read/display flow for uploaded and generated avatars.
 - [ ] Fix verified persistence/display issue and add focused regression coverage.
 - [ ] Verify saved avatar readback through the profile UI and commit all completed changes.
+
+# Watcher URL import security
+- [x] Restrict URL imports to public HTTP(S) destinations and validate each redirect.
+- [x] Add regression tests for private hosts, IP ranges, and unsafe redirects.

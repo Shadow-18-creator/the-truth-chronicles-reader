@@ -53,7 +53,10 @@ export const addWatcherSource = createServerFn({ method: "POST" })
 
     let raw = data.text?.trim() ?? "";
     if (data.kind === "url") {
-      const res = await fetch(data.url!, { headers: { "User-Agent": "WatcherBot/1.0" } });
+      const sourceUrl = data.url;
+      if (!sourceUrl) throw new Error("URL is required");
+      const { fetchPublicPage } = await import("./watcher-url.server");
+      const res = await fetchPublicPage(sourceUrl);
       if (!res.ok) throw new Error(`Could not fetch that page (${res.status})`);
       raw = stripHtml(await res.text());
       if (!raw) throw new Error("That page had no readable text");

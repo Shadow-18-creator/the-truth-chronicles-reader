@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2, Languages, Loader2, RefreshCw } from "lucide-react";
+import { Bookmark, BookmarkCheck, MessageCircle, ArrowLeft, Star, Trash2, Languages, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -12,6 +12,7 @@ import { getChapterRatingStats } from "@/lib/chapter.functions";
 import { getTranslationLanguage, TRANSLATION_LANGUAGES } from "@/lib/translation-catalog";
 import type { Database } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 type Chapter = Database["public"]["Tables"]["chapters"]["Row"];
 
