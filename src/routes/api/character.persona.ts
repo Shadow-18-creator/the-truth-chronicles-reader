@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { saveCompiledCharacter } from "@/lib/character-store.server";
+import { postToN8n } from "@/lib/character.functions";
 
 const personaSchema = z.object({
   character_id: z.string().min(1),
@@ -46,13 +47,8 @@ export const Route = createFileRoute("/api/character/persona")({
             event_context: event_context.trim(),
           };
 
-          const upstream = await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+          const { response: upstream, text: rawText } = await postToN8n(webhookUrl, payload);
 
-          const rawText = await upstream.text();
           if (!upstream.ok) {
             return new Response(rawText || "n8n compiler failed.", { status: upstream.status });
           }

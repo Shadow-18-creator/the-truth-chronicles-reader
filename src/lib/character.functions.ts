@@ -36,6 +36,45 @@ export interface ChatCharacterResult {
   error?: string;
 }
 
+export async function postToN8n(primaryUrl: string, payload: unknown): Promise<{ response: Response; text: string }> {
+  let response = await fetch(primaryUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  let text = await response.text();
+
+  // If 404 with n8n unregistered webhook message, automatically try alternative (test <-> prod)
+  if (response.status === 404 && text.includes("The requested webhook")) {
+    let altUrl: string | null = null;
+    if (primaryUrl.includes("/webhook-test/")) {
+      altUrl = primaryUrl.replace("/webhook-test/", "/webhook/");
+    } else if (primaryUrl.includes("/webhook/")) {
+      altUrl = primaryUrl.replace("/webhook/", "/webhook-test/");
+    }
+
+    if (altUrl) {
+      try {
+        const altResponse = await fetch(altUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const altText = await altResponse.text();
+        if (altResponse.ok || (!altText.includes("The requested webhook") && altResponse.status !== 404)) {
+          response = altResponse;
+          text = altText;
+        }
+      } catch {
+        // retain original response
+      }
+    }
+  }
+
+  return { response, text };
+}
+
 /**
  * Task 1: Server Handler to compile and save character persona via n8n webhook.
  * Webhook URL and Gemini API key are kept strictly on the server.
@@ -68,23 +107,20 @@ export const saveCharacterPersona = createServerFn({ method: "POST" })
     };
 
     try {
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const { response, text: rawText } = await postToN8n(webhookUrl, payload);
 
       if (!response.ok) {
-        const errorText = await response.text();
+        if (rawText.includes("The requested webhook") && rawText.includes("not registered")) {
+          throw new Error(
+            "n8n webhook is not currently listening. In your n8n canvas, toggle the workflow switch to 'Active' (or click 'Test workflow' if testing)."
+          );
+        }
         throw new Error(
-          `n8n Persona Compiler returned status ${response.status}: ${errorText || "Unknown error"}`
+          `n8n Persona Compiler returned status ${response.status}: ${rawText || "Unknown error"}`
         );
       }
 
       let resData: any;
-      const rawText = await response.text();
       try {
         resData = JSON.parse(rawText);
       } catch {
@@ -160,16 +196,18 @@ export const chatWithCharacter = createServerFn({ method: "POST" })
     };
 
     try {
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const { response, text: rawText } = await postToN8n(webhookUrl, payload);
 
       // Handle 404 / Not Found gracefully
       if (response.status === 404) {
+        if (rawText.includes("The requested webhook") && rawText.includes("not registered")) {
+          return {
+            success: false,
+            character_id: payload.character_id,
+            error: "n8n chat webhook is not currently listening. In your n8n canvas, toggle the workflow switch to 'Active' (or click 'Test workflow' if testing).",
+            reply: "The sanctuary link to the character agent is temporarily quiet. Please ensure the n8n workflow is Active.",
+          };
+        }
         return {
           success: false,
           notFound: true,
@@ -178,7 +216,6 @@ export const chatWithCharacter = createServerFn({ method: "POST" })
         };
       }
 
-      const rawText = await response.text();
       if (!response.ok) {
         // Check if error body mentions not found / uncompiled
         if (

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { postToN8n } from "@/lib/character.functions";
 
 const chatSchema = z.object({
   character_id: z.string().min(1),
@@ -41,11 +42,7 @@ export const Route = createFileRoute("/api/character/chat")({
             user_query: user_query.trim(),
           };
 
-          const upstream = await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+          const { response: upstream, text: rawText } = await postToN8n(webhookUrl, payload);
 
           if (upstream.status === 404) {
             return new Response(
@@ -59,7 +56,6 @@ export const Route = createFileRoute("/api/character/chat")({
             );
           }
 
-          const rawText = await upstream.text();
           if (!upstream.ok) {
             if (
               rawText.toLowerCase().includes("not found") ||
