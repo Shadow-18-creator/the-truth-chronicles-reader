@@ -1,0 +1,379 @@
+{
+  "name": "Character Persona Compiler & Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "save-character-persona",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7c018081-0d5c-426c-a7e0-99841387f350",
+      "name": "Save Persona Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "c1d2691a-db22-4e35-a012-9a5e81c2b85e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $json.body.gemini_api_key }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ systemInstruction: { parts: [{ text: \"You are a master narrative architect. Summarize the provided character notes and event context into a strict, second-person system prompt of under 250 words that starts with \\\"You are...\\\". It must define the character's personality traits, speech tone, world rules, and boundaries. Output only the system prompt text.\" }] }, contents: [{ role: \"user\", parts: [{ text: \"Raw personality notes:\\n\" + $json.body.raw_personality + \"\\n\\nEvent context:\\n\" + $json.body.event_context }] }] }) }}",
+        "options": {}
+      },
+      "id": "e1a7a9cf-2a63-4767-a6af-9c1892f56b3f",
+      "name": "Compile Persona with Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        272,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Q0iOI1jJ0O88C21i",
+          "cachedResultName": "character_agents"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "character_id",
+              "keyValue": "={{ $(\"Save Persona Webhook\").item.json.body.character_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "character_id": "={{ $(\"Save Persona Webhook\").item.json.body.character_id }}",
+            "character_name": "={{ $(\"Save Persona Webhook\").item.json.body.character_name }}",
+            "raw_personality": "={{ $(\"Save Persona Webhook\").item.json.body.raw_personality }}",
+            "event_context": "={{ $(\"Save Persona Webhook\").item.json.body.event_context }}",
+            "compiled_system_prompt": "={{ $json.candidates[0].content.parts[0].text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "character_id",
+              "displayName": "character_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "character_name",
+              "displayName": "character_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "raw_personality",
+              "displayName": "raw_personality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_context",
+              "displayName": "event_context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "compiled_system_prompt",
+              "displayName": "compiled_system_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "be5360c1-986a-49ed-b12e-8dc3dad0b3a4",
+      "name": "Upsert Character",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: \"deployed\", character_id: $(\"Save Persona Webhook\").item.json.body.character_id, character_name: $(\"Save Persona Webhook\").item.json.body.character_name, compiled_system_prompt: $(\"Compile Persona with Gemini\").item.json.candidates[0].content.parts[0].text }) }}",
+        "options": {}
+      },
+      "id": "bfaa27c3-9a1d-4d67-b191-7374edfa57eb",
+      "name": "Respond Deployed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        720,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-character",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "faf5279b-d3cb-499c-8935-f8f3c7575e07",
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "a5c20da4-19b7-4c9d-a15d-6f8ad8de7aff"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Q0iOI1jJ0O88C21i",
+          "cachedResultName": "character_agents"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "character_id",
+              "keyValue": "={{ $(\"Chat Webhook\").item.json.body.character_id }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "e1888c91-50b3-41b5-aea0-fcef263ff918",
+      "name": "Fetch Character",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        448
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.compiled_system_prompt }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9fc3db09-9791-4c0f-9467-57b486f703a0",
+      "name": "Character Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $(\"Chat Webhook\").item.json.body.gemini_api_key }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ systemInstruction: { parts: [{ text: $json.compiled_system_prompt }] }, contents: [{ role: \"user\", parts: [{ text: $(\"Chat Webhook\").item.json.body.user_query }] }] }) }}",
+        "options": {}
+      },
+      "id": "1a951a37-acb9-45ad-9dad-49e627012446",
+      "name": "Generate Character Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        800,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ character_name: $(\"Fetch Character\").item.json.character_name, reply: $json.candidates[0].content.parts[0].text }) }}",
+        "options": {}
+      },
+      "id": "11c17067-0207-4d0d-80cc-cd609d824cf3",
+      "name": "Respond Reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1024,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: \"Character not found\", character_id: $(\"Chat Webhook\").item.json.body.character_id }) }}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "id": "4a167ce8-eee7-44d4-ba95-9a0cefe3c220",
+      "name": "Respond Not Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        816,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Save Persona Webhook": {
+      "main": [
+        [
+          {
+            "node": "Compile Persona with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Persona with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Upsert Character",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Character": {
+      "main": [
+        [
+          {
+            "node": "Respond Deployed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Character",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Character": {
+      "main": [
+        [
+          {
+            "node": "Character Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Found?": {
+      "main": [
+        [
+          {
+            "node": "Generate Character Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Character Reply": {
+      "main": [
+        [
+          {
+            "node": "Respond Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "37ccdb83-e4da-4998-98be-631725734672",
+  "meta": {
+    "instanceId": "1bb9e2a6c1ad4c71ecb5c44d07fe93d911024fa81d5c577090ef8067eb501386"
+  },
+  "id": "5JNp6aV2RKLAblwo",
+  "tags": []
+}

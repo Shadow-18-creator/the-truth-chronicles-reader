@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
   getCompiledCharacters,
+  getCompiledCharacter,
   saveCompiledCharacter,
   type CompiledCharacter,
 } from "@/lib/character-store.server";
@@ -34,6 +35,86 @@ export interface ChatCharacterResult {
   character_id: string;
   notFound?: boolean;
   error?: string;
+}
+
+/**
+ * Direct Gemini Native Compiler (matches the exact prompt & model from the n8n workflow)
+ */
+export async function compilePersonaWithGemini(
+  apiKey: string,
+  raw_personality: string,
+  event_context: string
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [
+          {
+            text: 'You are a master narrative architect. Summarize the provided character notes and event context into a strict, second-person system prompt of under 250 words that starts with "You are...". It must define the character\'s personality traits, speech tone, world rules, and boundaries. Output only the system prompt text.',
+          },
+        ],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Raw personality notes:\n${raw_personality}\n\nEvent context:\n${event_context}`,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini direct compilation failed (${res.status}): ${errText}`);
+  }
+
+  const json: any = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("No output text received from Gemini.");
+  return text.trim();
+}
+
+/**
+ * Direct Gemini Native Chat (matches the exact prompt & model from the n8n workflow)
+ */
+export async function chatWithCharacterGemini(
+  apiKey: string,
+  systemPrompt: string,
+  userQuery: string
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: userQuery }],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini direct chat failed (${res.status}): ${errText}`);
+  }
+
+  const json: any = await res.json();
+  const reply = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) throw new Error("No reply text received from Gemini.");
+  return reply.trim();
 }
 
 export async function postToN8n(primaryUrl: string, payload: unknown): Promise<{ response: Response; text: string }> {
@@ -76,8 +157,7 @@ export async function postToN8n(primaryUrl: string, payload: unknown): Promise<{
 }
 
 /**
- * Task 1: Server Handler to compile and save character persona via n8n webhook.
- * Webhook URL and Gemini API key are kept strictly on the server.
+ * Task 1: Server Handler to compile and save character persona via n8n webhook or direct Gemini fallback.
  */
 export const saveCharacterPersona = createServerFn({ method: "POST" })
   .validator((input: SavePersonaInput) => {
@@ -92,12 +172,6 @@ export const saveCharacterPersona = createServerFn({ method: "POST" })
     const geminiApiKey =
       data.gemini_api_key?.trim() || process.env.GEMINI_API_KEY || "";
 
-    if (!webhookUrl) {
-      throw new Error(
-        "N8N_SAVE_PERSONA_URL is not configured in .env. Please configure your live n8n webhook URL."
-      );
-    }
-
     const payload = {
       gemini_api_key: geminiApiKey,
       character_id: data.character_id.trim().toLowerCase(),
@@ -106,71 +180,78 @@ export const saveCharacterPersona = createServerFn({ method: "POST" })
       event_context: data.event_context.trim(),
     };
 
-    try {
-      const { response, text: rawText } = await postToN8n(webhookUrl, payload);
+    let compiledPrompt = "";
+    let status = "deployed";
 
-      if (!response.ok) {
-        if (rawText.includes("The requested webhook") && rawText.includes("not registered")) {
-          throw new Error(
-            "n8n webhook is not currently listening. In your n8n canvas, toggle the workflow switch to 'Active' (or click 'Test workflow' if testing)."
-          );
+    // 1. Try n8n webhook first if configured
+    if (webhookUrl) {
+      try {
+        const { response, text: rawText } = await postToN8n(webhookUrl, payload);
+        if (response.ok) {
+          let resData: any;
+          try {
+            resData = JSON.parse(rawText);
+          } catch {
+            resData = { compiled_system_prompt: rawText };
+          }
+
+          const parsedItem = Array.isArray(resData) ? resData[0] : resData;
+          compiledPrompt =
+            parsedItem?.compiled_system_prompt ||
+            parsedItem?.prompt ||
+            parsedItem?.system_prompt ||
+            parsedItem?.output ||
+            (typeof parsedItem === "string" ? parsedItem : rawText);
+
+          status =
+            parsedItem?.status ||
+            parsedItem?.deployment_status ||
+            "deployed";
+        } else {
+          console.warn(`n8n webhook returned status ${response.status}. Attempting direct Gemini compilation.`);
         }
+      } catch (n8nErr) {
+        console.warn("n8n webhook failed, falling back to direct Gemini compilation:", n8nErr);
+      }
+    }
+
+    // 2. Direct Gemini fallback (if n8n is offline, expired, or not configured)
+    if (!compiledPrompt) {
+      if (!geminiApiKey) {
         throw new Error(
-          `n8n Persona Compiler returned status ${response.status}: ${rawText || "Unknown error"}`
+          "n8n webhook is offline and no Gemini API Key was provided. Please configure GEMINI_API_KEY or enter your key in the BYOK field."
         );
       }
-
-      let resData: any;
-      try {
-        resData = JSON.parse(rawText);
-      } catch {
-        resData = { compiled_system_prompt: rawText };
-      }
-
-      // Handle both single object and array responses from n8n nodes
-      const parsedItem = Array.isArray(resData) ? resData[0] : resData;
-
-      const compiledPrompt =
-        parsedItem?.compiled_system_prompt ||
-        parsedItem?.prompt ||
-        parsedItem?.system_prompt ||
-        parsedItem?.output ||
-        (typeof parsedItem === "string" ? parsedItem : rawText);
-
-      const status =
-        parsedItem?.status ||
-        parsedItem?.deployment_status ||
-        (response.ok ? "deployed" : "failed");
-
-      // Persist character in our server character store
-      saveCompiledCharacter({
-        character_id: payload.character_id,
-        character_name: payload.character_name,
-        raw_personality: payload.raw_personality,
-        event_context: payload.event_context,
-        compiled_system_prompt: compiledPrompt,
-        deployment_status: status,
-        updated_at: new Date().toISOString(),
-      });
-
-      return {
-        success: true,
-        character_id: payload.character_id,
-        character_name: payload.character_name,
-        compiled_system_prompt: compiledPrompt,
-        deployment_status: status,
-      };
-    } catch (err) {
-      console.error("saveCharacterPersona error:", err);
-      throw new Error(
-        err instanceof Error ? err.message : "Failed to compile character persona via n8n."
+      compiledPrompt = await compilePersonaWithGemini(
+        geminiApiKey,
+        payload.raw_personality,
+        payload.event_context
       );
+      status = "deployed";
     }
+
+    // Persist character in our server character store
+    saveCompiledCharacter({
+      character_id: payload.character_id,
+      character_name: payload.character_name,
+      raw_personality: payload.raw_personality,
+      event_context: payload.event_context,
+      compiled_system_prompt: compiledPrompt,
+      deployment_status: status,
+      updated_at: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      character_id: payload.character_id,
+      character_name: payload.character_name,
+      compiled_system_prompt: compiledPrompt,
+      deployment_status: status,
+    };
   });
 
 /**
- * Task 2: Server Handler to chat with an in-character AI agent via n8n webhook.
- * Gracefully handles 404 / "Not Found" if character has not been compiled yet.
+ * Task 2: Server Handler to chat with an in-character AI agent via n8n webhook or direct Gemini fallback.
  */
 export const chatWithCharacter = createServerFn({ method: "POST" })
   .validator((input: ChatCharacterInput) => {
@@ -183,81 +264,86 @@ export const chatWithCharacter = createServerFn({ method: "POST" })
     const geminiApiKey =
       data.gemini_api_key?.trim() || process.env.GEMINI_API_KEY || "";
 
-    if (!webhookUrl) {
-      throw new Error(
-        "N8N_CHAT_CHARACTER_URL is not configured in .env. Please configure your live n8n webhook URL."
-      );
-    }
-
     const payload = {
       gemini_api_key: geminiApiKey,
       character_id: data.character_id.trim().toLowerCase(),
       user_query: data.user_query.trim(),
     };
 
-    try {
-      const { response, text: rawText } = await postToN8n(webhookUrl, payload);
+    let reply = "";
+    let isNotFound = false;
 
-      // Handle 404 / Not Found gracefully
-      if (response.status === 404) {
-        if (rawText.includes("The requested webhook") && rawText.includes("not registered")) {
-          return {
-            success: false,
-            character_id: payload.character_id,
-            error: "n8n chat webhook is not currently listening. In your n8n canvas, toggle the workflow switch to 'Active' (or click 'Test workflow' if testing).",
-            reply: "The sanctuary link to the character agent is temporarily quiet. Please ensure the n8n workflow is Active.",
-          };
+    // 1. Try n8n webhook if configured
+    if (webhookUrl) {
+      try {
+        const { response, text: rawText } = await postToN8n(webhookUrl, payload);
+
+        if (response.status === 404) {
+          if (!rawText.includes("not registered")) {
+            isNotFound = true;
+          }
+        } else if (response.ok) {
+          let resData: any;
+          try {
+            resData = JSON.parse(rawText);
+          } catch {
+            resData = { reply: rawText };
+          }
+
+          const parsedItem = Array.isArray(resData) ? resData[0] : resData;
+          reply =
+            parsedItem?.reply ||
+            parsedItem?.output ||
+            parsedItem?.response ||
+            parsedItem?.text ||
+            parsedItem?.message ||
+            (typeof parsedItem === "string" ? parsedItem : rawText);
         }
+      } catch (n8nErr) {
+        console.warn("n8n chat webhook failed, falling back to direct Gemini engine:", n8nErr);
+      }
+    }
+
+    if (isNotFound) {
+      return {
+        success: false,
+        notFound: true,
+        character_id: payload.character_id,
+        reply: `Character "${payload.character_id}" has not been compiled into this sanctuary yet. The author must first compile their persona in the Scriptorium.`,
+      };
+    }
+
+    // 2. Direct Gemini chat fallback (if n8n is offline, expired, or not configured)
+    if (!reply) {
+      const character = getCompiledCharacter(payload.character_id);
+      if (!character || !character.compiled_system_prompt) {
         return {
           success: false,
           notFound: true,
           character_id: payload.character_id,
-          reply: `Character "${payload.character_id}" has not been compiled into this sanctuary yet. The author must first compile their persona in the Scriptorium.`,
+          reply: `Character "${payload.character_id}" has not been compiled yet. Please compile this persona in the Scriptorium first.`,
         };
       }
 
-      if (!response.ok) {
-        // Check if error body mentions not found / uncompiled
-        if (
-          rawText.toLowerCase().includes("not found") ||
-          rawText.toLowerCase().includes("uncompiled") ||
-          rawText.toLowerCase().includes("no persona")
-        ) {
-          return {
-            success: false,
-            notFound: true,
-            character_id: payload.character_id,
-            reply: `Character "${payload.character_id}" has not awakened yet. Please ask the author to compile this persona.`,
-          };
-        }
-
+      if (!geminiApiKey) {
         throw new Error(
-          `n8n Character Chat returned status ${response.status}: ${rawText || "Service error"}`
+          "Gemini API key is required to commune with the character directly. Please add GEMINI_API_KEY to your environment or BYOK field."
         );
       }
 
-      let resData: any;
-      try {
-        resData = JSON.parse(rawText);
-      } catch {
-        resData = { reply: rawText };
-      }
+      reply = await chatWithCharacterGemini(
+        geminiApiKey,
+        character.compiled_system_prompt,
+        payload.user_query
+      );
+    }
 
-      const parsedItem = Array.isArray(resData) ? resData[0] : resData;
-      const reply =
-        parsedItem?.reply ||
-        parsedItem?.output ||
-        parsedItem?.response ||
-        parsedItem?.text ||
-        parsedItem?.message ||
-        (typeof parsedItem === "string" ? parsedItem : rawText);
-
-      return {
-        success: true,
-        character_id: payload.character_id,
-        reply: reply || "…",
-      };
-    } catch (err) {
+    return {
+      success: true,
+      character_id: payload.character_id,
+      reply: reply || "…",
+    };
+  });
       console.error("chatWithCharacter error:", err);
       throw new Error(
         err instanceof Error ? err.message : "The character could not be reached through the veil."

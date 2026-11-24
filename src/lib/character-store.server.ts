@@ -69,6 +69,13 @@ export function getCompiledCharacters(): CompiledCharacter[] {
   return DEFAULT_CHARACTERS;
 }
 
+export function getCompiledCharacter(characterId: string): CompiledCharacter | undefined {
+  const characters = getCompiledCharacters();
+  return characters.find(
+    (c) => c.character_id.toLowerCase() === characterId.trim().toLowerCase()
+  );
+}
+
 export function saveCompiledCharacter(character: CompiledCharacter): CompiledCharacter[] {
   try {
     const list = getCompiledCharacters();
