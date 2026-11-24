@@ -172,6 +172,12 @@ export const saveCharacterPersona = createServerFn({ method: "POST" })
     const geminiApiKey =
       data.gemini_api_key?.trim() || process.env.GEMINI_API_KEY || "";
 
+    if (!geminiApiKey) {
+      throw new Error(
+        "A Google Gemini API key is required to compile personas. Please paste your key into the 'Optional Gemini API Key (BYOK Override)' field below, or set GEMINI_API_KEY in your .env file."
+      );
+    }
+
     const payload = {
       gemini_api_key: geminiApiKey,
       character_id: data.character_id.trim().toLowerCase(),
@@ -263,6 +269,12 @@ export const chatWithCharacter = createServerFn({ method: "POST" })
     const webhookUrl = process.env.N8N_CHAT_CHARACTER_URL;
     const geminiApiKey =
       data.gemini_api_key?.trim() || process.env.GEMINI_API_KEY || "";
+
+    if (!geminiApiKey) {
+      throw new Error(
+        "A Google Gemini API key is required to commune with this character. Please enter your key in the API key override field or set GEMINI_API_KEY in .env."
+      );
+    }
 
     const payload = {
       gemini_api_key: geminiApiKey,

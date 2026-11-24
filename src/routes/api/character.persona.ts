@@ -32,6 +32,13 @@ export const Route = createFileRoute("/api/character/persona")({
           const webhookUrl = process.env.N8N_SAVE_PERSONA_URL;
           const apiKey = gemini_api_key?.trim() || process.env.GEMINI_API_KEY || "";
 
+          if (!apiKey) {
+            return new Response(
+              JSON.stringify({ error: "Gemini API key is required. Please set GEMINI_API_KEY in .env or pass gemini_api_key." }),
+              { status: 400, headers: { "Content-Type": "application/json" } }
+            );
+          }
+
           if (!webhookUrl) {
             return new Response(
               JSON.stringify({ error: "N8N_SAVE_PERSONA_URL is not configured in .env." }),
