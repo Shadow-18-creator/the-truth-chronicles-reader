@@ -44,6 +44,29 @@ export function CharacterChatWidget({ defaultCharacterId }: { defaultCharacterId
   const getCharsFn = useServerFn(getAvailableCharacters);
   const chatFn = useServerFn(chatWithCharacter);
 
+  const DAILY_LIMIT = 5;
+  const [dailyUsage, setDailyUsage] = useState<number>(0);
+
+  useEffect(() => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const savedDate = localStorage.getItem("ttc_communion_date");
+      if (savedDate !== today) {
+        localStorage.setItem("ttc_communion_date", today);
+        localStorage.setItem("ttc_communion_count", "0");
+        setDailyUsage(0);
+      } else {
+        const count = parseInt(localStorage.getItem("ttc_communion_count") || "0", 10);
+        setDailyUsage(count);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const remaining = isAdmin ? 999 : Math.max(0, DAILY_LIMIT - dailyUsage);
+  const isQuotaExhausted = !isAdmin && remaining <= 0;
+
   const { data: availableCharacters, isLoading: isLoadingChars } = useQuery({
     queryKey: ["available-characters"],
     queryFn: () => getCharsFn(),
@@ -86,6 +109,10 @@ export function CharacterChatWidget({ defaultCharacterId }: { defaultCharacterId
     const charId = isCustomMode ? customCharId.trim().toLowerCase() : selectedCharId.trim().toLowerCase();
 
     if (!query || isSending) return;
+    if (isQuotaExhausted) {
+      toast.error("Daily limit reached (5/5 requests). Your communion energy replenishes tomorrow!");
+      return;
+    }
     if (!charId) {
       toast.error("Please select or enter a character.");
       return;
@@ -130,6 +157,15 @@ export function CharacterChatWidget({ defaultCharacterId }: { defaultCharacterId
             timestamp: replyTimestamp,
           },
         ]);
+        if (!isAdmin) {
+          const nextCount = dailyUsage + 1;
+          setDailyUsage(nextCount);
+          try {
+            localStorage.setItem("ttc_communion_count", nextCount.toString());
+          } catch {
+            // ignore
+          }
+        }
       }
     } catch (err) {
       console.error("Chat error:", err);
@@ -166,6 +202,19 @@ export function CharacterChatWidget({ defaultCharacterId }: { defaultCharacterId
               <Badge variant="outline" className="border-primary/40 text-primary text-[10px] font-sans">
                 ✦ In-Character
               </Badge>
+              {isAdmin ? (
+                <Badge variant="outline" className="border-amber-500/40 text-amber-400 text-[10px] font-sans">
+                  Admin (Unlimited)
+                </Badge>
+              ) : (
+                <Badge
+                  variant={isQuotaExhausted ? "destructive" : "secondary"}
+                  className="text-[10px] font-sans"
+                  title="Daily reader communion allowance"
+                >
+                  {isQuotaExhausted ? "Daily Limit Reached (5/5)" : `${remaining}/${DAILY_LIMIT} Daily Communions Left`}
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground font-body italic">
               {activeCharRecord?.event_context ? activeCharRecord.event_context.slice(0, 80) + "…" : "Powered by live n8n persona agent"}
@@ -333,6 +382,17 @@ export function CharacterChatWidget({ defaultCharacterId }: { defaultCharacterId
         </div>
       )}
 
+      {/* Daily limit reached banner */}
+      {isQuotaExhausted && (
+        <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/20 text-amber-300 text-xs flex items-center justify-between font-sans">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+            You have used all 5 character communions for today. The veil closes until dawn.
+          </span>
+          <span className="text-[11px] opacity-75">Resets daily</span>
+        </div>
+      )}
+
       {/* Input Form */}
       <form onSubmit={handleSend} className="p-3 sm:p-4 border-t border-border/40 bg-card/90 flex items-center gap-2">
         <Button
@@ -347,17 +407,21 @@ export function CharacterChatWidget({ defaultCharacterId }: { defaultCharacterId
         </Button>
 
         <Input
-          placeholder={`Speak with ${activeCharName}…`}
+          placeholder={
+            isQuotaExhausted
+              ? "Daily communion limit reached (5/5). The character rests until tomorrow…"
+              : `Speak with ${activeCharName}…`
+          }
           value={inputQuery}
           onChange={(e) => setInputQuery(e.target.value)}
-          disabled={isSending}
-          className="flex-1 bg-input/40 border-border/40 font-body text-sm h-10 px-4 focus-visible:ring-primary/40"
+          disabled={isSending || isQuotaExhausted}
+          className="flex-1 bg-input/40 border-border/40 font-body text-sm h-10 px-4 focus-visible:ring-primary/40 disabled:opacity-60"
         />
 
         <Button
           type="submit"
-          disabled={isSending || !inputQuery.trim()}
-          className="bg-gold-gradient text-gold-foreground h-10 px-4 font-semibold shadow-md shrink-0"
+          disabled={isSending || !inputQuery.trim() || isQuotaExhausted}
+          className="bg-gold-gradient text-gold-foreground h-10 px-4 font-semibold shadow-md shrink-0 disabled:opacity-50"
         >
           {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
