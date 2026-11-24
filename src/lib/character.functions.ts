@@ -6,6 +6,8 @@ import {
   type CompiledCharacter,
 } from "@/lib/character-store.server";
 
+export type { CompiledCharacter } from "@/lib/character-store.server";
+
 export interface SavePersonaInput {
   character_id: string;
   character_name: string;
@@ -285,77 +287,78 @@ export const chatWithCharacter = createServerFn({ method: "POST" })
     let reply = "";
     let isNotFound = false;
 
-    // 1. Try n8n webhook if configured
-    if (webhookUrl) {
-      try {
-        const { response, text: rawText } = await postToN8n(webhookUrl, payload);
+    try {
+      // 1. Try n8n webhook if configured
+      if (webhookUrl) {
+        try {
+          const { response, text: rawText } = await postToN8n(webhookUrl, payload);
 
-        if (response.status === 404) {
-          if (!rawText.includes("not registered")) {
-            isNotFound = true;
-          }
-        } else if (response.ok) {
-          let resData: any;
-          try {
-            resData = JSON.parse(rawText);
-          } catch {
-            resData = { reply: rawText };
-          }
+          if (response.status === 404) {
+            if (!rawText.includes("not registered")) {
+              isNotFound = true;
+            }
+          } else if (response.ok) {
+            let resData: any;
+            try {
+              resData = JSON.parse(rawText);
+            } catch {
+              resData = { reply: rawText };
+            }
 
-          const parsedItem = Array.isArray(resData) ? resData[0] : resData;
-          reply =
-            parsedItem?.reply ||
-            parsedItem?.output ||
-            parsedItem?.response ||
-            parsedItem?.text ||
-            parsedItem?.message ||
-            (typeof parsedItem === "string" ? parsedItem : rawText);
+            const parsedItem = Array.isArray(resData) ? resData[0] : resData;
+            reply =
+              parsedItem?.reply ||
+              parsedItem?.output ||
+              parsedItem?.response ||
+              parsedItem?.text ||
+              parsedItem?.message ||
+              (typeof parsedItem === "string" ? parsedItem : rawText);
+          }
+        } catch (n8nErr) {
+          console.warn("n8n chat webhook failed, falling back to direct Gemini engine:", n8nErr);
         }
-      } catch (n8nErr) {
-        console.warn("n8n chat webhook failed, falling back to direct Gemini engine:", n8nErr);
       }
-    }
 
-    if (isNotFound) {
-      return {
-        success: false,
-        notFound: true,
-        character_id: payload.character_id,
-        reply: `Character "${payload.character_id}" has not been compiled into this sanctuary yet. The author must first compile their persona in the Scriptorium.`,
-      };
-    }
-
-    // 2. Direct Gemini chat fallback (if n8n is offline, expired, or not configured)
-    if (!reply) {
-      const character = getCompiledCharacter(payload.character_id);
-      if (!character || !character.compiled_system_prompt) {
+      if (isNotFound) {
         return {
           success: false,
           notFound: true,
           character_id: payload.character_id,
-          reply: `Character "${payload.character_id}" has not been compiled yet. Please compile this persona in the Scriptorium first.`,
+          reply: `Character "${payload.character_id}" has not been compiled into this sanctuary yet. The author must first compile their persona in the Scriptorium.`,
         };
       }
 
-      if (!geminiApiKey) {
-        throw new Error(
-          "Gemini API key is required to commune with the character directly. Please add GEMINI_API_KEY to your environment or BYOK field."
+      // 2. Direct Gemini chat fallback (if n8n is offline, expired, or not configured)
+      if (!reply) {
+        const character = getCompiledCharacter(payload.character_id);
+        if (!character || !character.compiled_system_prompt) {
+          return {
+            success: false,
+            notFound: true,
+            character_id: payload.character_id,
+            reply: `Character "${payload.character_id}" has not been compiled yet. Please compile this persona in the Scriptorium first.`,
+          };
+        }
+
+        if (!geminiApiKey) {
+          throw new Error(
+            "Gemini API key is required to commune with the character directly. Please add GEMINI_API_KEY to your environment or BYOK field."
+          );
+        }
+
+        reply = await chatWithCharacterGemini(
+          geminiApiKey,
+          character.compiled_system_prompt,
+          payload.user_query
         );
       }
 
-      reply = await chatWithCharacterGemini(
-        geminiApiKey,
-        character.compiled_system_prompt,
-        payload.user_query
-      );
-    }
-
-    return {
-      success: true,
-      character_id: payload.character_id,
-      reply: reply || "…",
-    };
-  });
+      return {
+        success: true,
+        character_id: payload.character_id,
+        reply: reply || "…",
+      };
+    } catch (err) {
       console.error("chatWithCharacter error:", err);
       throw new Error(
         err instanceof Error ? err.message : "The character could not be reached through the veil."
