@@ -28,11 +28,15 @@ import { Route as AdminTranslationsRouteImport } from './routes/admin.translatio
 import { Route as AdminWatcherRouteImport } from './routes/admin.watcher'
 import { Route as ChaptersIndexRouteImport } from './routes/chapters.index'
 import { Route as ChaptersSlugRouteImport } from './routes/chapters.$slug'
+import { Route as CharactersChatRouteImport } from './routes/characters.chat'
 import { Route as ChatSlugRouteImport } from './routes/chat.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiAvatarUploadRouteImport } from './routes/api/avatar.upload'
+import { Route as ApiCharacterChatRouteImport } from './routes/api/character.chat'
+import { Route as ApiCharacterListRouteImport } from './routes/api/character.list'
+import { Route as ApiCharacterPersonaRouteImport } from './routes/api/character.persona'
 import { Route as ApiKeeperChatRouteImport } from './routes/api/keeper.chat'
 import { Route as ApiKeeperTtsRouteImport } from './routes/api/keeper.tts'
 import { Route as ApiProfileAvatarRouteImport } from './routes/api/profile/avatar'
@@ -137,6 +141,11 @@ const ChaptersSlugRoute = ChaptersSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => ChaptersRoute,
 } as any)
+const CharactersChatRoute = CharactersChatRouteImport.update({
+  id: '/characters/chat',
+  path: '/characters/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatSlugRoute = ChatSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -161,6 +170,21 @@ const Char91DotmcpChar93InvokeToolToolRoute =
 const ApiAvatarUploadRoute = ApiAvatarUploadRouteImport.update({
   id: '/api/avatar/upload',
   path: '/api/avatar/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCharacterChatRoute = ApiCharacterChatRouteImport.update({
+  id: '/api/character/chat',
+  path: '/api/character/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCharacterListRoute = ApiCharacterListRouteImport.update({
+  id: '/api/character/list',
+  path: '/api/character/list',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCharacterPersonaRoute = ApiCharacterPersonaRouteImport.update({
+  id: '/api/character/persona',
+  path: '/api/character/persona',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiKeeperChatRoute = ApiKeeperChatRouteImport.update({
@@ -212,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
+  '/characters/chat': typeof CharactersChatRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
@@ -219,6 +244,9 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/avatar/upload': typeof ApiAvatarUploadRoute
+  '/api/character/chat': typeof ApiCharacterChatRoute
+  '/api/character/list': typeof ApiCharacterListRoute
+  '/api/character/persona': typeof ApiCharacterPersonaRoute
   '/api/keeper/chat': typeof ApiKeeperChatRoute
   '/api/keeper/tts': typeof ApiKeeperTtsRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -242,6 +270,7 @@ export interface FileRoutesByTo {
   '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
+  '/characters/chat': typeof CharactersChatRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin': typeof AdminIndexRoute
@@ -249,6 +278,9 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/avatar/upload': typeof ApiAvatarUploadRoute
+  '/api/character/chat': typeof ApiCharacterChatRoute
+  '/api/character/list': typeof ApiCharacterListRoute
+  '/api/character/persona': typeof ApiCharacterPersonaRoute
   '/api/keeper/chat': typeof ApiKeeperChatRoute
   '/api/keeper/tts': typeof ApiKeeperTtsRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -275,6 +307,7 @@ export interface FileRoutesById {
   '/admin/translations': typeof AdminTranslationsRoute
   '/admin/watcher': typeof AdminWatcherRoute
   '/chapters/$slug': typeof ChaptersSlugRoute
+  '/characters/chat': typeof CharactersChatRoute
   '/chat/$slug': typeof ChatSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/admin/': typeof AdminIndexRoute
@@ -282,6 +315,9 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/avatar/upload': typeof ApiAvatarUploadRoute
+  '/api/character/chat': typeof ApiCharacterChatRoute
+  '/api/character/list': typeof ApiCharacterListRoute
+  '/api/character/persona': typeof ApiCharacterPersonaRoute
   '/api/keeper/chat': typeof ApiKeeperChatRoute
   '/api/keeper/tts': typeof ApiKeeperTtsRoute
   '/api/profile/avatar': typeof ApiProfileAvatarRoute
@@ -309,6 +345,7 @@ export interface FileRouteTypes {
     | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
+    | '/characters/chat'
     | '/chat/$slug'
     | '/u/$username'
     | '/admin/'
@@ -316,6 +353,9 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/avatar/upload'
+    | '/api/character/chat'
+    | '/api/character/list'
+    | '/api/character/persona'
     | '/api/keeper/chat'
     | '/api/keeper/tts'
     | '/api/profile/avatar'
@@ -339,6 +379,7 @@ export interface FileRouteTypes {
     | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
+    | '/characters/chat'
     | '/chat/$slug'
     | '/u/$username'
     | '/admin'
@@ -346,6 +387,9 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/avatar/upload'
+    | '/api/character/chat'
+    | '/api/character/list'
+    | '/api/character/persona'
     | '/api/keeper/chat'
     | '/api/keeper/tts'
     | '/api/profile/avatar'
@@ -371,6 +415,7 @@ export interface FileRouteTypes {
     | '/admin/translations'
     | '/admin/watcher'
     | '/chapters/$slug'
+    | '/characters/chat'
     | '/chat/$slug'
     | '/u/$username'
     | '/admin/'
@@ -378,6 +423,9 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/avatar/upload'
+    | '/api/character/chat'
+    | '/api/character/list'
+    | '/api/character/persona'
     | '/api/keeper/chat'
     | '/api/keeper/tts'
     | '/api/profile/avatar'
@@ -400,10 +448,14 @@ export interface RootRouteChildren {
   WatcherRoute: typeof WatcherRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  CharactersChatRoute: typeof CharactersChatRoute
   UUsernameRoute: typeof UUsernameRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiAvatarUploadRoute: typeof ApiAvatarUploadRoute
+  ApiCharacterChatRoute: typeof ApiCharacterChatRoute
+  ApiCharacterListRoute: typeof ApiCharacterListRoute
+  ApiCharacterPersonaRoute: typeof ApiCharacterPersonaRoute
   ApiKeeperChatRoute: typeof ApiKeeperChatRoute
   ApiKeeperTtsRoute: typeof ApiKeeperTtsRoute
   ApiProfileAvatarRoute: typeof ApiProfileAvatarRoute
@@ -547,6 +599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChaptersSlugRouteImport
       parentRoute: typeof ChaptersRoute
     }
+    '/characters/chat': {
+      id: '/characters/chat'
+      path: '/characters/chat'
+      fullPath: '/characters/chat'
+      preLoaderRoute: typeof CharactersChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat/$slug': {
       id: '/chat/$slug'
       path: '/$slug'
@@ -580,6 +639,27 @@ declare module '@tanstack/react-router' {
       path: '/api/avatar/upload'
       fullPath: '/api/avatar/upload'
       preLoaderRoute: typeof ApiAvatarUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/character/chat': {
+      id: '/api/character/chat'
+      path: '/api/character/chat'
+      fullPath: '/api/character/chat'
+      preLoaderRoute: typeof ApiCharacterChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/character/list': {
+      id: '/api/character/list'
+      path: '/api/character/list'
+      fullPath: '/api/character/list'
+      preLoaderRoute: typeof ApiCharacterListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/character/persona': {
+      id: '/api/character/persona'
+      path: '/api/character/persona'
+      fullPath: '/api/character/persona'
+      preLoaderRoute: typeof ApiCharacterPersonaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/keeper/chat': {
@@ -682,10 +762,14 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  CharactersChatRoute: CharactersChatRoute,
   UUsernameRoute: UUsernameRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiAvatarUploadRoute: ApiAvatarUploadRoute,
+  ApiCharacterChatRoute: ApiCharacterChatRoute,
+  ApiCharacterListRoute: ApiCharacterListRoute,
+  ApiCharacterPersonaRoute: ApiCharacterPersonaRoute,
   ApiKeeperChatRoute: ApiKeeperChatRoute,
   ApiKeeperTtsRoute: ApiKeeperTtsRoute,
   ApiProfileAvatarRoute: ApiProfileAvatarRoute,

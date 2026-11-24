@@ -10,13 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search, Pencil, Eye } from "lucide-react";
+import { Moon, BookOpen, MessagesSquare, Bookmark, ShieldCheck, LogOut, UserCircle2, Search, Pencil, Eye, Bot } from "lucide-react";
 import { SeekerAvatar } from "@/components/SeekerAvatar";
 
 const navItems = [
   { to: "/chapters", label: "Chapters", icon: BookOpen },
+  { to: "/characters/chat", label: "Characters", icon: Bot },
   { to: "/chat", label: "Halls", icon: MessagesSquare },
-  { to: "/watcher", label: "Talk to The Keeper", icon: Eye },
+  { to: "/watcher", label: "The Keeper", icon: Eye },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
   { to: "/users", label: "Seekers", icon: Search },
 ];
